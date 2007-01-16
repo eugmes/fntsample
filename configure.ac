@@ -27,5 +27,8 @@ else
 	AC_MSG_ERROR([Unicode blocks file not found])
 fi
 
-AC_CONFIG_FILES([Makefile])
+DATE=`date +%F`
+AC_SUBST([DATE])
+
+AC_CONFIG_FILES([Makefile fntsample.1])
 AC_OUTPUT
