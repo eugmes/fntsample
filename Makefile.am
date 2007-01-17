@@ -3,7 +3,7 @@ bin_PROGRAMS = fntsample
 
 fntsample_SOURCES = fntsample.c unicode_blocks.h
 nodist_fntsample_SOURCES = unicode_blocks.c
-fntsample_CFLAGS = $(cairo_CFLAGS) $(freetype2_CFLAGS) $(glib_CFLAGS)
+fntsample_CFLAGS = $(AM_CFLAGS) $(cairo_CFLAGS) $(freetype2_CFLAGS) $(glib_CFLAGS)
 fntsample_LDFLAGS = -Wl,--as-needed
 fntsample_LDADD = $(cairo_LIBS) $(freetype2_LIBS) $(glib_LIBS)
 
