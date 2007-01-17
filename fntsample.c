@@ -35,6 +35,53 @@
 #define cell_width	((A4_WIDTH - 2*xmin_border) / 16)
 #define cell_height	((A4_HEIGHT - 2*ymin_border) / 16)
 
+static const char *font_file_name;
+static const char *output_file_name;
+
+static void usage(const char *);
+
+static void parse_options(int argc, char * const argv[])
+{
+	for (;;) {
+		int c;
+
+		c = getopt(argc, argv, "f:o:h");
+
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'f':
+			if (font_file_name) {
+				fprintf(stderr, "Font file name should be given only once!\n");
+				exit(1);
+			}
+			font_file_name = optarg;
+			break;
+		case 'o':
+			if (output_file_name) {
+				fprintf(stderr, "Output file name should be given only once!\n");
+				exit(1);
+			}
+			output_file_name = optarg;
+			break;
+		case 'h':
+			usage(argv[0]);
+			exit(0);
+			break;
+		case '?':
+		default:
+			usage(argv[0]);
+			exit(1);
+			break;
+		}
+	}
+	if (!font_file_name || !output_file_name) {
+		usage(argv[0]);
+		exit(1);
+	}
+}
+
 static const struct unicode_block *get_unicode_block(unsigned long charcode)
 {
 	const struct unicode_block *block;
@@ -267,7 +314,8 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 
 static void usage(const char *cmd)
 {
-	fprintf(stderr, "Usage: %s <font-file> <output-file.pdf>\n", cmd);
+	fprintf(stderr, "Usage: %s -f FONT-FILE -o OUTPUT-FILE\n"
+			"       %s -h\n" , cmd, cmd);
 }
 
 int main(int argc, char **argv)
@@ -282,12 +330,9 @@ int main(int argc, char **argv)
 	char *fontname; /* full name of the font */
 	cairo_font_face_t *cr_face;
 
-	if (argc != 3) {
-		usage(argv[0]);
-		exit(1);
-	}
+	parse_options(argc, argv);
 
-	file = fopen(argv[2], "w");
+	file = fopen(output_file_name, "w");
 	if (!file) {
 		perror("fopen");
 		exit(2);
@@ -299,7 +344,7 @@ int main(int argc, char **argv)
 		exit(3);
 	}
 
-	error = FT_New_Face(library, argv[1], 0, &face);
+	error = FT_New_Face(library, font_file_name, 0, &face);
 	if (error) {
 		fprintf(stderr, "Failed to create new face\n");
 		exit(4);
@@ -321,7 +366,7 @@ int main(int argc, char **argv)
 	
 	cr_face = cairo_ft_font_face_create_for_ft_face(face, 0);
 
-	surface = cairo_pdf_surface_create(argv[2], A4_WIDTH, A4_HEIGHT); /* A4 paper */
+	surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
 	cr = cairo_create(surface);
 	cairo_surface_destroy(surface);
