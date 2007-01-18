@@ -2,7 +2,7 @@ AC_INIT([fntsample], [1], [eugen@debian.org])
 AC_CONFIG_SRCDIR([fntsample.c])
 AC_CONFIG_HEADER([config.h])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign 1.7])
 AM_MAINTAINER_MODE
 
 AC_PROG_CC_C99
