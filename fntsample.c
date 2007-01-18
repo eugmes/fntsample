@@ -103,13 +103,13 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *range_na
 {
 	cairo_text_extents_t extents;
 
-	cairo_select_font_face (cr, "Times", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+	cairo_select_font_face (cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 	cairo_set_font_size (cr, 12.0);
 	cairo_text_extents(cr, face_name, &extents);
 	cairo_move_to(cr, (A4_WIDTH-extents.width)/2.0, 30.0);
 	cairo_show_text(cr, face_name);
 
-	cairo_select_font_face (cr, "Helvetica", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+	cairo_select_font_face (cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 	cairo_set_font_size (cr, 12.0);
 	cairo_text_extents(cr, range_name, &extents);
 	cairo_move_to(cr, (A4_WIDTH-extents.width)/2.0, 50.0);
@@ -195,7 +195,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	/* draw glyph numbers */
 	buf[1] = '\0';
 #define hexdigs	"0123456789ABCDEF"
-	cairo_select_font_face(cr, "Helvetica", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 	cairo_set_font_size(cr, 12.0);
 
 	for (i = 0; i < 16; i++) {
@@ -287,7 +287,7 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 			charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
 		} while (idx && (charcode < tbl_end) && is_in_block(charcode, block));
 		
-		cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+		cairo_select_font_face(cr, "Mono", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 8.0);
 
 		for (i = 0; i < tbl_end - tbl_start; i++)
