@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
+#include <stdbool.h>
 
 #include "unicode_blocks.h"
 
@@ -115,11 +116,10 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *range_na
 	cairo_show_text(cr, range_name);
 }
 
-static void draw_cell(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
+static void draw_cell(cairo_t *cr, FT_Face ft_face,
 		double x, double y, FT_ULong charcode, unsigned long idx)
 {
 #define DOTTED_CIRCLE	0x25CC
-	char buf[9];
 	cairo_glyph_t glyphs[2];
 	cairo_text_extents_t extents;
 	int combining = (g_unichar_type(charcode) == G_UNICODE_COMBINING_MARK) ||
@@ -148,10 +148,6 @@ static void draw_cell(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 		nglyphs = 1;
 	}
 
-
-	cairo_set_font_face(cr, face);
-	cairo_set_font_size(cr, 20.0);
-
 	cairo_glyph_extents(cr, glyphs, 1, &extents);
 
 	glyphs[0].x += x + (cell_width - extents.width)/2.0 - extents.x_bearing;
@@ -162,14 +158,6 @@ static void draw_cell(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 	}
 
 	cairo_show_glyphs(cr, glyphs, nglyphs);
-
-	/* draw glyph unicode value */
-	snprintf(buf, sizeof(buf), "%04lX", charcode);
-	cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 8.0);
-	cairo_text_extents(cr, buf, &extents);
-	cairo_move_to(cr, x + (cell_width - extents.width)/2.0, y + cell_height - 4.0);
-	cairo_show_text(cr, buf);
 }
 
 static void draw_grid(cairo_t *cr, unsigned int x_cells,
@@ -182,12 +170,12 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	cairo_text_extents_t extents;
 
 #define TABLE_H (A4_HEIGHT - ymin_border * 2)
+	cairo_set_line_width(cr, 1.0);
 	cairo_rectangle(cr, x_min, ymin_border, x_max - x_min, TABLE_H);
 	cairo_move_to(cr, x_min, ymin_border);
 	cairo_line_to(cr, x_min, ymin_border - 15.0);
 	cairo_move_to(cr, x_max, ymin_border);
 	cairo_line_to(cr, x_max, ymin_border - 15.0);
-	cairo_set_line_width(cr, 1.0);
 	cairo_stroke(cr);
 
 	cairo_set_line_width(cr, 0.5);
@@ -228,12 +216,10 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 				ymin_border - 5.0);
 		cairo_show_text(cr, buf);
 	}
-
 }
 
 static void draw_empty_cell(cairo_t *cr, double x, double y, unsigned long charcode)
 {
-	cairo_save(cr);
 	if (g_unichar_isdefined(charcode)) {
 		if (g_unichar_iscntrl(charcode))
 			cairo_set_source_rgb(cr, 0.0, 0.0, 0.5);
@@ -242,7 +228,19 @@ static void draw_empty_cell(cairo_t *cr, double x, double y, unsigned long charc
 	}
 	cairo_rectangle(cr, x, y, cell_width, cell_height);
 	cairo_fill(cr);
-	cairo_restore(cr);
+	if (g_unichar_isdefined(charcode))
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+}
+
+static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
+{
+	char buf[9];
+	cairo_text_extents_t extents;
+
+	snprintf(buf, sizeof(buf), "%04lX", charcode);
+	cairo_text_extents(cr, buf, &extents);
+	cairo_move_to(cr, x + (cell_width - extents.width)/2.0, y + cell_height - 4.0);
+	cairo_show_text(cr, buf);
 }
 
 static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
@@ -264,23 +262,38 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		unsigned int rows = (tbl_end - tbl_start) / 16;
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
 		unsigned long i;
+		bool filled_cells[265]; /* 16x16 glyphs max */
 
 		draw_header(cr, fontname, block->name);
 		prev_cell = tbl_start - 1;
 
+		memset(filled_cells, '\0', sizeof(filled_cells));
+
+		cairo_set_font_face(cr, face);
+		cairo_set_font_size(cr, 20.0);
 		do {
 			for (i = prev_cell + 1; i < charcode; i++) {
 				draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
 							ymin_border + cell_height*((i - tbl_start) % 16), i);
 			}
-			draw_cell(cr, face, ft_face, x_min + cell_width*((charcode - tbl_start) / 16),
+			draw_cell(cr, ft_face, x_min + cell_width*((charcode - tbl_start) / 16),
 					ymin_border + cell_height*((charcode - tbl_start) % 16),
 					charcode, idx);
+
+			filled_cells[charcode - tbl_start] = true;
+
 			prev_charcode = charcode;
 			prev_cell = charcode;
 			charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
 		} while (idx && (charcode < tbl_end) && is_in_block(charcode, block));
 		
+		cairo_select_font_face(cr, "Courier", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+		cairo_set_font_size(cr, 8.0);
+
+		for (i = 0; i < tbl_end - tbl_start; i++)
+			if (filled_cells[i])
+				draw_charcode(cr, x_min + cell_width*(i / 16), ymin_border + cell_height*(i % 16),
+						i + tbl_start);
 		for (i = prev_cell + 1; i < tbl_end; i++) {
 			draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
 					ymin_border + cell_height*((i - tbl_start) % 16),
@@ -371,10 +384,9 @@ int main(int argc, char **argv)
 	cr = cairo_create(surface);
 	cairo_surface_destroy(surface);
 
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	draw_glyphs(cr, cr_face, face, fontname);
 	cairo_destroy(cr);
 	fclose(file);
 	return 0;
 }
-
-
