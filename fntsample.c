@@ -37,6 +37,7 @@
 #define cell_height	((A4_HEIGHT - 2*ymin_border) / 16)
 
 static const char *font_file_name;
+static const char *other_font_file_name;
 static const char *output_file_name;
 
 static void usage(const char *);
@@ -46,7 +47,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt(argc, argv, "f:o:h");
+		c = getopt(argc, argv, "f:o:hd:");
 
 		if (c == -1)
 			break;
@@ -69,6 +70,13 @@ static void parse_options(int argc, char * const argv[])
 		case 'h':
 			usage(argv[0]);
 			exit(0);
+			break;
+		case 'd':
+			if (other_font_file_name) {
+				fprintf(stderr, "Font file name should be given only once!\n");
+				exit(1);
+			}
+			other_font_file_name = optarg;
 			break;
 		case '?':
 		default:
@@ -117,7 +125,8 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *range_na
 }
 
 static void draw_cell(cairo_t *cr, FT_Face ft_face,
-		double x, double y, FT_ULong charcode, unsigned long idx)
+		double x, double y, FT_ULong charcode, unsigned long idx,
+		bool highlight)
 {
 #define DOTTED_CIRCLE	0x25CC
 	cairo_glyph_t glyphs[2];
@@ -127,6 +136,13 @@ static void draw_cell(cairo_t *cr, FT_Face ft_face,
 		(g_unichar_type(charcode) == G_UNICODE_NON_SPACING_MARK);
 	FT_UInt circle_idx = 0;
 	int nglyphs;
+
+	if (highlight) {
+		cairo_set_source_rgb(cr, 1.0, 1.0, 0.6);
+		cairo_rectangle(cr, x, y, cell_width, cell_height);
+		cairo_fill(cr);
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	}
 
 	if (combining)
 		circle_idx = FT_Get_Char_Index(ft_face, DOTTED_CIRCLE);
@@ -245,7 +261,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 
 static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		FT_Face ft_face, const char *fontname, unsigned long charcode,
-		const struct unicode_block *block)
+		const struct unicode_block *block, FT_Face ft_other_face)
 {
 	FT_UInt idx;
 	unsigned long prev_charcode;
@@ -263,6 +279,7 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
 		unsigned long i;
 		bool filled_cells[265]; /* 16x16 glyphs max */
+		bool highlight = false;
 
 		draw_header(cr, fontname, block->name);
 		prev_cell = tbl_start - 1;
@@ -276,9 +293,13 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 				draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
 							ymin_border + cell_height*((i - tbl_start) % 16), i);
 			}
+			
+			if (ft_other_face)
+				highlight = !FT_Get_Char_Index(ft_other_face, charcode);
+
 			draw_cell(cr, ft_face, x_min + cell_width*((charcode - tbl_start) / 16),
 					ymin_border + cell_height*((charcode - tbl_start) % 16),
-					charcode, idx);
+					charcode, idx, highlight);
 
 			filled_cells[charcode - tbl_start] = true;
 
@@ -308,7 +329,7 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 }
 
 static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
-		const char *fontname)
+		const char *fontname, FT_Face ft_other_face)
 {
 	FT_ULong charcode;
 	FT_UInt idx;
@@ -319,7 +340,8 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 	while (idx) {
 		block = get_unicode_block(charcode);
 		if (block) {
-			charcode = draw_unicode_block(cr, face, ft_face, fontname, charcode, block);
+			charcode = draw_unicode_block(cr, face, ft_face, fontname,
+					charcode, block, ft_other_face);
 		}
 		charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
 	}
@@ -327,8 +349,10 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 
 static void usage(const char *cmd)
 {
-	fprintf(stderr, "Usage: %s -f FONT-FILE -o OUTPUT-FILE\n"
-			"       %s -h\n" , cmd, cmd);
+	fprintf(stderr, "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
+			"       %s -h\n\n" , cmd, cmd);
+	fprintf(stderr, "Options:\n"
+			"  -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n");
 }
 
 int main(int argc, char **argv)
@@ -338,7 +362,7 @@ int main(int argc, char **argv)
 	FILE *file;
 	FT_Error error;
 	FT_Library library;
-	FT_Face face;
+	FT_Face face, other_face = NULL;
 	FT_SfntName face_name;
 	char *fontname; /* full name of the font */
 	cairo_font_face_t *cr_face;
@@ -379,13 +403,21 @@ int main(int argc, char **argv)
 	
 	cr_face = cairo_ft_font_face_create_for_ft_face(face, 0);
 
+	if (other_font_file_name) {
+		error = FT_New_Face(library, other_font_file_name, 0, &other_face);
+		if (error) {
+			fprintf(stderr, "Failed to create new face\n");
+			exit(4);
+		}
+	}
+
 	surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
 	cr = cairo_create(surface);
 	cairo_surface_destroy(surface);
 
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	draw_glyphs(cr, cr_face, face, fontname);
+	draw_glyphs(cr, cr_face, face, fontname, other_face);
 	cairo_destroy(cr);
 	fclose(file);
 	return 0;

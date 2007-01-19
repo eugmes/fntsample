@@ -25,6 +25,15 @@ Make samples of
 Write output to 
 .I OUTPUT-FILE
 .TP
+.BI "-d " OTHER-FONT
+Compare
+.I FONT-FILE
+with
+.IR OTHER-FONT .
+Glyphs added to
+.I FONT-FILE
+will be highlighted.
+.TP
 .BI "\-h"
 Display help text and exit
 .SH AUTHOR
