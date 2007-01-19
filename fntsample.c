@@ -19,6 +19,7 @@
 #include FT_SFNT_NAMES_H
 #include <cairo.h>
 #include <cairo-pdf.h>
+#include <cairo-ps.h>
 #include <cairo-ft.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 static const char *font_file_name;
 static const char *other_font_file_name;
 static const char *output_file_name;
+bool postscript_output;
 
 static void usage(const char *);
 
@@ -47,7 +49,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt(argc, argv, "f:o:hd:");
+		c = getopt(argc, argv, "f:o:hd:s");
 
 		if (c == -1)
 			break;
@@ -77,6 +79,9 @@ static void parse_options(int argc, char * const argv[])
 				exit(1);
 			}
 			other_font_file_name = optarg;
+			break;
+		case 's':
+			postscript_output = true;
 			break;
 		case '?':
 		default:
@@ -352,7 +357,8 @@ static void usage(const char *cmd)
 	fprintf(stderr, "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
 			"       %s -h\n\n" , cmd, cmd);
 	fprintf(stderr, "Options:\n"
-			"  -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n");
+			"  -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
+			"  -s             Use PostScript format for output instead of PDF\n");
 }
 
 int main(int argc, char **argv)
@@ -411,7 +417,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
+	if (postscript_output)
+		surface = cairo_ps_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
+	else
+		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
 	cr = cairo_create(surface);
 	cairo_surface_destroy(surface);

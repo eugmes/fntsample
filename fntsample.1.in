@@ -12,8 +12,8 @@ fntsample \- PDF font samples generator
 .SH DESCRIPTION
 .I fntsample
 program can be used to generate font samples that show Unicode coverage
-of the font and are similar in appearance to Unicode charts. Samples are saved
-into PDF file.
+of the font and are similar in appearance to Unicode charts. Samples can be saved
+into PDF or PostScript file.
 .SH OPTIONS
 fntsample supports the following options.
 .TP
@@ -33,6 +33,9 @@ with
 Glyphs added to
 .I FONT-FILE
 will be highlighted.
+.TP
+.BI \-s
+Use PostScript format for output instead of PDF.
 .TP
 .BI "\-h"
 Display help text and exit
