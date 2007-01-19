@@ -422,7 +422,17 @@ int main(int argc, char **argv)
 	else
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
+	if (!surface) {
+		fprintf(stderr, "Failed to create cairo surface\n");
+		exit(1);
+	}
+
 	cr = cairo_create(surface);
+	if (!cr) {
+		fprintf(stderr, "cairo_create failed\n");
+		exit(1);
+	}
+
 	cairo_surface_destroy(surface);
 
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
