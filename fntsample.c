@@ -134,7 +134,7 @@ static void draw_cell(cairo_t *cr, FT_Face ft_face,
 		combining = 0;
 
 #if 1
-	/* TODO fix ditted circle */
+	/* TODO fix dotted circle */
 	combining = 0;
 #endif
 
