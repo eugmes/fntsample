@@ -278,7 +278,7 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		unsigned int rows = (tbl_end - tbl_start) / 16;
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
 		unsigned long i;
-		bool filled_cells[265]; /* 16x16 glyphs max */
+		bool filled_cells[256]; /* 16x16 glyphs max */
 		bool highlight = false;
 
 		draw_header(cr, fontname, block->name);
