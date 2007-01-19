@@ -5,12 +5,28 @@ fntsample \- PDF font samples generator
 .
 .SH SYNPOSYS
 .B fntsample
-.I font-file pdf-file
+.BI "[ " OPTIONS " ]"
+.BI "\-f " FONT-FILE " \-o " OUTPUT-FILE
+.br
+.B fntsample \-h
 .SH DESCRIPTION
 .I fntsample
 program can be used to generate font samples that show Unicode coverage
 of the font and are similar in appearance to Unicode charts. Samples are saved
 into PDF file.
+.SH OPTIONS
+fntsample supports the following options.
+.TP
+.BI "\-f " FONT-FILE
+Make samples of 
+.I FONT-FILE
+.TP
+.BI "\-o " OUTPUT-FILE
+Write output to 
+.I OUTPUT-FILE
+.TP
+.BI "\-h"
+Display help text and exit
 .SH AUTHOR
 Copyright \(co 2007 Eugeniy Meshcheryakov <eugen@debian.org>
 .br
