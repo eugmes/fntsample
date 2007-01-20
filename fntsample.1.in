@@ -3,7 +3,7 @@
 .SH NAME
 fntsample \- PDF font samples generator
 .
-.SH SYNPOSYS
+.SH SYNOPSIS
 .B fntsample
 .BI "[ " OPTIONS " ]"
 .BI "\-f " FONT-FILE " \-o " OUTPUT-FILE
