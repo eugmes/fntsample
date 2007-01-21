@@ -18,7 +18,7 @@ UNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
 AC_ARG_WITH([unicode-blocks],
 	    AS_HELP_STRING([--with-unicode-blocks],
 			   [path for Unicode blocks file (/usr/share/unicode/Blocks.txt)]),
-	    [UNICODE_BLOCKS=$withwal])
+	    [UNICODE_BLOCKS=$withval])
 
 AC_MSG_CHECKING([for Unicode blocks file])
 if test -r "$UNICODE_BLOCKS"; then
