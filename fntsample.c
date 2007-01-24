@@ -17,6 +17,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_SFNT_NAMES_H
+#include FT_TYPE1_TABLES_H
 #include <cairo.h>
 #include <cairo-pdf.h>
 #include <cairo-ps.h>
@@ -361,6 +362,53 @@ static void usage(const char *cmd)
 			"  -s             Use PostScript format for output instead of PDF\n");
 }
 
+static const char *get_font_name(FT_Face face)
+{
+	FT_Error error;
+	FT_SfntName face_name;
+	char *fontname;
+
+	/* try SFNT format */
+	error = FT_Get_Sfnt_Name(face, 4 /* full font name */, &face_name);
+	if (!error) {
+		fontname = malloc(face_name.string_len + 1);
+		if (!fontname) {
+			perror("malloc");
+			exit(1);
+		}
+		memcpy(fontname, face_name.string, face_name.string_len);
+		fontname[face_name.string_len] = '\0';
+		return fontname;
+	}
+
+	/* try Type1 format */
+	PS_FontInfoRec fontinfo;
+
+	error = FT_Get_PS_Font_Info(face, &fontinfo);
+	if (!error) {
+		if (fontinfo.full_name) {
+			fontname = strdup(fontinfo.full_name);
+			if (!fontname) {
+				perror("strdup");
+				exit(1);
+			}
+			return fontname;
+		}
+	}
+
+	/* fallback */
+	size_t len = strlen(face->family_name) + strlen(face->style_name) + 1/* for space */;
+
+	fontname = malloc(len + 1);
+	if (!fontname) {
+		perror("malloc");
+		exit(1);
+	}
+
+	sprintf(fontname, "%s %s", face->family_name, face->style_name);
+	return fontname;
+}
+
 int main(int argc, char **argv)
 {
 	cairo_surface_t *surface;
@@ -368,8 +416,7 @@ int main(int argc, char **argv)
 	FT_Error error;
 	FT_Library library;
 	FT_Face face, other_face = NULL;
-	FT_SfntName face_name;
-	char *fontname; /* full name of the font */
+	const char *fontname; /* full name of the font */
 	cairo_font_face_t *cr_face;
 	cairo_status_t cr_status;
 
@@ -387,19 +434,7 @@ int main(int argc, char **argv)
 		exit(4);
 	}
 
-	error = FT_Get_Sfnt_Name(face, 4 /* full font name */, &face_name);
-	if (error) {
-		fprintf(stderr, "%s: failed to get face name\n", argv[0]);
-		exit(5);
-	}
-
-	fontname = malloc(face_name.string_len + 1);
-	if (!fontname) {
-		perror("malloc");
-		exit(6);
-	}
-	memcpy(fontname, face_name.string, face_name.string_len);
-	fontname[face_name.string_len] = '\0';
+	fontname = get_font_name(face);
 	
 	cr_face = cairo_ft_font_face_create_for_ft_face(face, 0);
 
