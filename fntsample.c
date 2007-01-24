@@ -371,24 +371,25 @@ int main(int argc, char **argv)
 	FT_SfntName face_name;
 	char *fontname; /* full name of the font */
 	cairo_font_face_t *cr_face;
+	cairo_status_t cr_status;
 
 	parse_options(argc, argv);
 
 	error = FT_Init_FreeType(&library);
 	if (error) {
-		fprintf(stderr, "Freetype error\n");
+		fprintf(stderr, "%s: freetype error\n", argv[0]);
 		exit(3);
 	}
 
 	error = FT_New_Face(library, font_file_name, 0, &face);
 	if (error) {
-		fprintf(stderr, "Failed to create new face\n");
+		fprintf(stderr, "%s: failed to create new face\n", argv[0]);
 		exit(4);
 	}
 
 	error = FT_Get_Sfnt_Name(face, 4 /* full font name */, &face_name);
 	if (error) {
-		fprintf(stderr, "Failed to get face name\n");
+		fprintf(stderr, "%s: failed to get face name\n", argv[0]);
 		exit(5);
 	}
 
@@ -405,7 +406,7 @@ int main(int argc, char **argv)
 	if (other_font_file_name) {
 		error = FT_New_Face(library, other_font_file_name, 0, &other_face);
 		if (error) {
-			fprintf(stderr, "Failed to create new face\n");
+			fprintf(stderr, "%s: failed to create new face\n", argv[0]);
 			exit(4);
 		}
 	}
@@ -415,14 +416,18 @@ int main(int argc, char **argv)
 	else
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
-	if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
-		fprintf(stderr, "Failed to create cairo surface\n");
+	cr_status = cairo_surface_status(surface);
+	if (cr_status != CAIRO_STATUS_SUCCESS) {
+		fprintf(stderr, "%s: failed to create cairo surface: %s\n",
+				argv[0], cairo_status_to_string(cr_status));
 		exit(1);
 	}
 
 	cr = cairo_create(surface);
-	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
-		fprintf(stderr, "cairo_create failed\n");
+	cr_status = cairo_status(cr);
+	if (cr_status != CAIRO_STATUS_SUCCESS) {
+		fprintf(stderr, "%s: cairo_create failed: %s\n",
+				argv[0], cairo_status_to_string(cr_status));
 		exit(1);
 	}
 
