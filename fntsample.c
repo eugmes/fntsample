@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 	}
 
 	cr = cairo_create(surface);
-	if (!cr) {
+	if (cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
 		fprintf(stderr, "cairo_create failed\n");
 		exit(1);
 	}
