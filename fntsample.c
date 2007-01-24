@@ -365,7 +365,6 @@ int main(int argc, char **argv)
 {
 	cairo_surface_t *surface;
 	cairo_t *cr;
-	FILE *file;
 	FT_Error error;
 	FT_Library library;
 	FT_Face face, other_face = NULL;
@@ -374,12 +373,6 @@ int main(int argc, char **argv)
 	cairo_font_face_t *cr_face;
 
 	parse_options(argc, argv);
-
-	file = fopen(output_file_name, "w");
-	if (!file) {
-		perror("fopen");
-		exit(2);
-	}
 
 	error = FT_Init_FreeType(&library);
 	if (error) {
@@ -422,7 +415,7 @@ int main(int argc, char **argv)
 	else
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
-	if (!surface) {
+	if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
 		fprintf(stderr, "Failed to create cairo surface\n");
 		exit(1);
 	}
@@ -438,6 +431,5 @@ int main(int argc, char **argv)
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	draw_glyphs(cr, cr_face, face, fontname, other_face);
 	cairo_destroy(cr);
-	fclose(file);
 	return 0;
 }
