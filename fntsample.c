@@ -397,7 +397,9 @@ static const char *get_font_name(FT_Face face)
 	}
 
 	/* fallback */
-	size_t len = strlen(face->family_name) + strlen(face->style_name) + 1/* for space */;
+	const char *family_name = face->family_name ? face->family_name : "Unknown";
+	const char *style_name = face->style_name ? face->style_name : "";
+	size_t len = strlen(family_name) + strlen(style_name) + 1/* for space */;
 
 	fontname = malloc(len + 1);
 	if (!fontname) {
@@ -405,7 +407,7 @@ static const char *get_font_name(FT_Face face)
 		exit(1);
 	}
 
-	sprintf(fontname, "%s %s", face->family_name, face->style_name);
+	sprintf(fontname, "%s %s", family_name, style_name);
 	return fontname;
 }
 
