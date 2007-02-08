@@ -16,7 +16,7 @@ AC_SUBST([UNICODE_BLOCKS])
 UNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
 
 AC_ARG_WITH([unicode-blocks],
-	    AS_HELP_STRING([--with-unicode-blocks],
+	    AS_HELP_STRING([--with-unicode-blocks=PATH],
 			   [path for Unicode blocks file (/usr/share/unicode/Blocks.txt)]),
 	    [UNICODE_BLOCKS=$withval])
 
@@ -24,7 +24,9 @@ AC_MSG_CHECKING([for Unicode blocks file])
 if test -r "$UNICODE_BLOCKS"; then
 	AC_MSG_RESULT([$UNICODE_BLOCKS])
 else
-	AC_MSG_ERROR([Unicode blocks file not found])
+	AC_MSG_ERROR([Unicode blocks file (Blocks.txt) not found at location $UNICODE_BLOCKS.
+Use --with-unicode-blocks option to specify different location.
+Blocks.txt file is available at Unicode site: http://unicode.org/Public/UNIDATA/Blocks.txt])
 fi
 
 DATE=`date +%F`
