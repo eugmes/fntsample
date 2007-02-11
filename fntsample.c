@@ -27,6 +27,7 @@
 #include <string.h>
 #include <glib.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #include "unicode_blocks.h"
 
