@@ -1,3 +1,6 @@
+Changes in version 2.3:
+	* Added "#include <unistd.h>" to get definition of getopt()
+
 Changes in version 2.2:
 	* Added support for fonts other than TrueType/OpenType
 	* Improved errors handling
