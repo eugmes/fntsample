@@ -300,7 +300,7 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 				draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
 							ymin_border + cell_height*((i - tbl_start) % 16), i);
 			}
-			
+
 			if (ft_other_face)
 				highlight = !FT_Get_Char_Index(ft_other_face, charcode);
 
@@ -314,7 +314,7 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 			prev_cell = charcode;
 			charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
 		} while (idx && (charcode < tbl_end) && is_in_block(charcode, block));
-		
+
 		cairo_select_font_face(cr, "Mono", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 8.0);
 
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
 	}
 
 	fontname = get_font_name(face);
-	
+
 	cr_face = cairo_ft_font_face_create_for_ft_face(face, 0);
 
 	if (other_font_file_name) {
