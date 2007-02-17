@@ -32,5 +32,5 @@ fi
 DATE=`date +%F`
 AC_SUBST([DATE])
 
-AC_CONFIG_FILES([Makefile fntsample.1])
+AC_CONFIG_FILES([Makefile fntsample.1 pdfoutline.1])
 AC_OUTPUT

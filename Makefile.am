@@ -8,7 +8,7 @@ fntsample_CFLAGS = $(AM_CFLAGS) $(cairo_CFLAGS) $(freetype2_CFLAGS) $(glib_CFLAG
 fntsample_LDFLAGS = -Wl,--as-needed
 fntsample_LDADD = $(cairo_LIBS) $(freetype2_LIBS) $(glib_LIBS)
 
-nodist_man_MANS = fntsample.1
+nodist_man_MANS = fntsample.1 pdfoutline.1
 
 EXTRA_DIST = genblocks.awk
 CLEANFILES = unicode_blocks.c
