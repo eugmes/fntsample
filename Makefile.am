@@ -1,5 +1,6 @@
 AM_CFLAGS = -Wall -W -Wwrite-strings -Wstrict-prototypes -pedantic
 bin_PROGRAMS = fntsample
+dist_bin_SCRIPTS = pdfoutline
 
 fntsample_SOURCES = fntsample.c unicode_blocks.h
 nodist_fntsample_SOURCES = unicode_blocks.c
