@@ -49,6 +49,10 @@ will be highlighted.
 .BI \-s
 Use PostScript format for output instead of PDF.
 .TP
+.BI \-l
+Print document outlines data to standard output.
+This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
+.TP
 .BI "\-h"
 Display help text and exit
 .SH EXAMPLES
@@ -67,7 +71,16 @@ fntsample -f font.ttf -d oldfont.ttf -o samples.pdf
 .SAMPLE
 fntsample -f font.ttf -s -o samples.ps
 .ESAMPLE
+.PP
+.RI "Make PDF samples for " font.ttf " and save output to file " samples.pdf " adding outlines to it:"
+.SAMPLE
+fntsample -f font.ttf -o temp.pdf -l > outlines.txt
+pdfoutline temp.pdf outlines.txt samples.pdf
+.ESAMPLE
 .SH AUTHOR
 Copyright \(co 2007 Eugeniy Meshcheryakov <eugen@debian.org>
 .br
 Homepage: <http://sourceforge.net/projects/fntsample>
+.SH SEE ALSO
+.PP
+.BR pdfoutline (1)
