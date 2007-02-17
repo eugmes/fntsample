@@ -43,6 +43,7 @@ static const char *font_file_name;
 static const char *other_font_file_name;
 static const char *output_file_name;
 bool postscript_output;
+bool print_outline;
 
 static void usage(const char *);
 
@@ -51,7 +52,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt(argc, argv, "f:o:hd:s");
+		c = getopt(argc, argv, "f:o:hd:sl");
 
 		if (c == -1)
 			break;
@@ -85,6 +86,9 @@ static void parse_options(int argc, char * const argv[])
 		case 's':
 			postscript_output = true;
 			break;
+		case 'l':
+			print_outline = true;
+			break;
 		case '?':
 		default:
 			usage(argv[0]);
@@ -112,6 +116,12 @@ static const struct unicode_block *get_unicode_block(unsigned long charcode)
 static int is_in_block(unsigned long charcode, const struct unicode_block *block)
 {
 	return ((charcode >= block->start) && (charcode <= block->end));
+}
+
+static void outline(int level, int page, const char *text)
+{
+	if (print_outline)
+		printf("%d %d %s\n", level, page, text);
 }
 
 static void draw_header(cairo_t *cr, const char *face_name, const char *range_name)
@@ -266,18 +276,19 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 	cairo_show_text(cr, buf);
 }
 
-static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
-		FT_Face ft_face, const char *fontname, unsigned long charcode,
+static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
+		FT_Face ft_face, const char *fontname, unsigned long *charcode,
 		const struct unicode_block *block, FT_Face ft_other_face)
 {
 	FT_UInt idx;
 	unsigned long prev_charcode;
 	unsigned long prev_cell;
+	int npages = 0;
 
-	idx = FT_Get_Char_Index(ft_face, charcode);
+	idx = FT_Get_Char_Index(ft_face, *charcode);
 
 	do {
-		unsigned long masked_charcode = (charcode & ~0xffL) + (block->start & 0xf0);
+		unsigned long masked_charcode = (*charcode & ~0xffL) + (block->start & 0xf0);
 		unsigned long tbl_start = (masked_charcode > block->start) ?
 			masked_charcode : block->start;
 		unsigned long tbl_end = ((masked_charcode + 0x100L) > block->end) ?
@@ -296,24 +307,24 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		cairo_set_font_face(cr, face);
 		cairo_set_font_size(cr, 20.0);
 		do {
-			for (i = prev_cell + 1; i < charcode; i++) {
+			for (i = prev_cell + 1; i < *charcode; i++) {
 				draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
 							ymin_border + cell_height*((i - tbl_start) % 16), i);
 			}
 
 			if (ft_other_face)
-				highlight = !FT_Get_Char_Index(ft_other_face, charcode);
+				highlight = !FT_Get_Char_Index(ft_other_face, *charcode);
 
-			draw_cell(cr, ft_face, x_min + cell_width*((charcode - tbl_start) / 16),
-					ymin_border + cell_height*((charcode - tbl_start) % 16),
-					charcode, idx, highlight);
+			draw_cell(cr, ft_face, x_min + cell_width*((*charcode - tbl_start) / 16),
+					ymin_border + cell_height*((*charcode - tbl_start) % 16),
+					*charcode, idx, highlight);
 
-			filled_cells[charcode - tbl_start] = true;
+			filled_cells[*charcode - tbl_start] = true;
 
-			prev_charcode = charcode;
-			prev_cell = charcode;
-			charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
-		} while (idx && (charcode < tbl_end) && is_in_block(charcode, block));
+			prev_charcode = *charcode;
+			prev_cell = *charcode;
+			*charcode = FT_Get_Next_Char(ft_face, *charcode, &idx);
+		} while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
 
 		cairo_select_font_face(cr, "Mono", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 8.0);
@@ -329,10 +340,12 @@ static unsigned long draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		}
 
 		draw_grid(cr, rows, tbl_start);
+		npages++;
 		cairo_show_page(cr);
-	} while (idx && is_in_block(charcode, block));
+	} while (idx && is_in_block(*charcode, block));
 
-	return prev_charcode;
+	*charcode = prev_charcode;
+	return npages;
 }
 
 static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
@@ -341,14 +354,20 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 	FT_ULong charcode;
 	FT_UInt idx;
 	const struct unicode_block *block;
+	int pageno = 1;
+
+	outline(0, pageno, fontname);
 
 	charcode = FT_Get_First_Char(ft_face, &idx);
 
 	while (idx) {
 		block = get_unicode_block(charcode);
 		if (block) {
-			charcode = draw_unicode_block(cr, face, ft_face, fontname,
-					charcode, block, ft_other_face);
+			int npages;
+			outline(1, pageno, block->name);
+			npages = draw_unicode_block(cr, face, ft_face, fontname,
+					&charcode, block, ft_other_face);
+			pageno += npages;
 		}
 		charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
 	}
@@ -360,7 +379,8 @@ static void usage(const char *cmd)
 			"       %s -h\n\n" , cmd, cmd);
 	fprintf(stderr, "Options:\n"
 			"  -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
-			"  -s             Use PostScript format for output instead of PDF\n");
+			"  -s             Use PostScript format for output instead of PDF\n"
+			"  -l             Print document outlines data to standard output\n");
 }
 
 static const char *get_font_name(FT_Face face)
