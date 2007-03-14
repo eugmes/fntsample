@@ -1,3 +1,8 @@
+Changes in version 2.4:
+	* Added script for making pdf files with bookmarks (pdfoutline) and
+	  option for fntsample to print bookmarks information (-l).
+	  pdfoutline requires perl and PDF::API2 library
+
 Changes in version 2.3:
 	* Added "#include <unistd.h>" to get definition of getopt()
 
