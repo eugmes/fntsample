@@ -9,6 +9,7 @@ AC_PROG_CC_C99
 AC_PROG_AWK
 
 PKG_CHECK_MODULES([cairo], [cairo])
+PKG_CHECK_MODULES([fontconfig], [fontconfig])
 PKG_CHECK_MODULES([freetype2], [freetype2])
 PKG_CHECK_MODULES([glib], [glib-2.0])
 
