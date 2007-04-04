@@ -307,6 +307,10 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		cairo_set_font_face(cr, face);
 		cairo_set_font_size(cr, 20.0);
 		do {
+			/* this should not be needed by with it pdf files are smaller,
+			 * and this may help to work around some cairo bugs
+			 */
+			cairo_save(cr);
 			for (i = prev_cell + 1; i < *charcode; i++) {
 				draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
 							ymin_border + cell_height*((i - tbl_start) % 16), i);
@@ -342,6 +346,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		draw_grid(cr, rows, tbl_start);
 		npages++;
 		cairo_show_page(cr);
+		cairo_restore(cr);
 	} while (idx && is_in_block(*charcode, block));
 
 	*charcode = prev_charcode;
