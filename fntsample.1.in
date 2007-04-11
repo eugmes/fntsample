@@ -29,15 +29,15 @@ into PDF (default) or PostScript file.
 .B fntsample
 supports the following options.
 .TP
-.BI "\-f " FONT-FILE
+.BI "\-\-font\-file, \-f " FONT-FILE
 Make samples of 
 .I FONT-FILE
 .TP
-.BI "\-o " OUTPUT-FILE
+.BI "\-\-output\-file, \-o " OUTPUT-FILE
 Write output to 
 .I OUTPUT-FILE
 .TP
-.BI "-d " OTHER-FONT
+.BI "\-\-other\-font\-file, -d " OTHER-FONT
 Compare
 .I FONT-FILE
 with
@@ -46,14 +46,14 @@ Glyphs added to
 .I FONT-FILE
 will be highlighted.
 .TP
-.BI \-s
+.BI "\-\-postscript\-output, \-s"
 Use PostScript format for output instead of PDF.
 .TP
-.BI \-l
+.BI "\-\-print\-outline, \-l"
 Print document outlines data to standard output.
 This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
 .TP
-.BI "\-h"
+.BI "\-\-help, \-h"
 Display help text and exit
 .SH EXAMPLES
 .RI "Make PDF samples for " font.ttf " and write them to file " samples.pdf :
