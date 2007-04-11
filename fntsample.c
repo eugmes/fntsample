@@ -28,6 +28,7 @@
 #include <glib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "unicode_blocks.h"
 
@@ -38,6 +39,16 @@
 #define ymin_border	(72.0)
 #define cell_width	((A4_WIDTH - 2*xmin_border) / 16)
 #define cell_height	((A4_HEIGHT - 2*ymin_border) / 16)
+
+static struct option longopts[] = {
+  {"font-file", 1, 0, 'f'},
+  {"output-file", 1, 0, 'o'},
+  {"help", 0, 0, 'h'},
+  {"other-font-file", 1, 0, 'd'},
+  {"postscript-output", 0, 0, 's'},
+  {"print-outline", 0, 0, 'l'},
+  {0, 0, 0, 0}
+};
 
 static const char *font_file_name;
 static const char *other_font_file_name;
@@ -52,7 +63,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt(argc, argv, "f:o:hd:sl");
+		c = getopt_long(argc, argv, "f:o:hd:sl", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -380,9 +391,9 @@ static void usage(const char *cmd)
 	fprintf(stderr, "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
 			"       %s -h\n\n" , cmd, cmd);
 	fprintf(stderr, "Options:\n"
-			"  -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
-			"  -s             Use PostScript format for output instead of PDF\n"
-			"  -l             Print document outlines data to standard output\n");
+			"  --other-font-file,   -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
+			"  --postscript-output, -s             Use PostScript format for output instead of PDF\n"
+			"  --print-outline,     -l             Print document outlines data to standard output\n");
 }
 
 static const char *get_font_name(FT_Face face)
