@@ -391,6 +391,9 @@ static void usage(const char *cmd)
 	fprintf(stderr, "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
 			"       %s -h\n\n" , cmd, cmd);
 	fprintf(stderr, "Options:\n"
+			"  --font-file,         -f FONT-FILE   Create samples of FONT-FILE\n"
+			"  --output-file,       -o OUTPUT-FILE Save samples to OUTPUT-FILE\n"
+			"  --help,              -h             Show this information message and exit\n"
 			"  --other-font-file,   -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
 			"  --postscript-output, -s             Use PostScript format for output instead of PDF\n"
 			"  --print-outline,     -l             Print document outlines data to standard output\n");
