@@ -152,18 +152,10 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *range_na
 	cairo_show_text(cr, range_name);
 }
 
-static void draw_cell(cairo_t *cr, FT_Face ft_face,
-		double x, double y, FT_ULong charcode, unsigned long idx,
-		bool highlight)
+static void draw_cell(cairo_t *cr, double x, double y,
+		unsigned long idx, bool highlight, cairo_glyph_t *glyph)
 {
-#define DOTTED_CIRCLE	0x25CC
-	cairo_glyph_t glyphs[2];
 	cairo_text_extents_t extents;
-	int combining = (g_unichar_type(charcode) == G_UNICODE_COMBINING_MARK) ||
-		(g_unichar_type(charcode) == G_UNICODE_ENCLOSING_MARK) ||
-		(g_unichar_type(charcode) == G_UNICODE_NON_SPACING_MARK);
-	FT_UInt circle_idx = 0;
-	int nglyphs;
 
 	if (highlight) {
 		cairo_set_source_rgb(cr, 1.0, 1.0, 0.6);
@@ -172,36 +164,12 @@ static void draw_cell(cairo_t *cr, FT_Face ft_face,
 		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	}
 
-	if (combining)
-		circle_idx = FT_Get_Char_Index(ft_face, DOTTED_CIRCLE);
-	if (!circle_idx)
-		combining = 0;
+	*glyph = (cairo_glyph_t){idx, 0, 0};
 
-#if 1
-	/* TODO fix dotted circle */
-	combining = 0;
-#endif
+	cairo_glyph_extents(cr, glyph, 1, &extents);
 
-	if (combining) {
-		glyphs[0] = (cairo_glyph_t){circle_idx, 0, 0};
-		glyphs[1] = (cairo_glyph_t){idx, 0, 0};
-		nglyphs = 2;
-	}
-	else {
-		glyphs[0] = (cairo_glyph_t){idx, 0, 0};
-		nglyphs = 1;
-	}
-
-	cairo_glyph_extents(cr, glyphs, 1, &extents);
-
-	glyphs[0].x += x + (cell_width - extents.width)/2.0 - extents.x_bearing;
-	glyphs[0].y += y + cell_height / 2.0;
-	if (nglyphs == 2) {
-		glyphs[1].x = glyphs[0].x + extents.x_advance;
-		glyphs[1].y = glyphs[0].y;
-	}
-
-	cairo_show_glyphs(cr, glyphs, nglyphs);
+	glyph->x += x + (cell_width - extents.width)/2.0 - extents.x_bearing;
+	glyph->y += y + cell_height / 2.0;
 }
 
 static void draw_grid(cairo_t *cr, unsigned int x_cells,
@@ -310,6 +278,10 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		bool filled_cells[256]; /* 16x16 glyphs max */
 		bool highlight = false;
 
+		/* XXX WARNING: not reentrant! */
+		static cairo_glyph_t glyphs[256];
+		unsigned int nglyphs = 0;
+
 		cairo_save(cr);
 		draw_header(cr, fontname, block->name);
 		prev_cell = tbl_start - 1;
@@ -327,9 +299,9 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 			if (ft_other_face)
 				highlight = !FT_Get_Char_Index(ft_other_face, *charcode);
 
-			draw_cell(cr, ft_face, x_min + cell_width*((*charcode - tbl_start) / 16),
+			draw_cell(cr, x_min + cell_width*((*charcode - tbl_start) / 16),
 					ymin_border + cell_height*((*charcode - tbl_start) % 16),
-					*charcode, idx, highlight);
+					idx, highlight, &glyphs[nglyphs++]);
 
 			filled_cells[*charcode - tbl_start] = true;
 
@@ -337,6 +309,8 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 			prev_cell = *charcode;
 			*charcode = FT_Get_Next_Char(ft_face, *charcode, &idx);
 		} while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
+
+		cairo_show_glyphs(cr, glyphs, nglyphs);
 
 		cairo_select_font_face(cr, "Mono", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 8.0);
