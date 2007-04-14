@@ -102,6 +102,9 @@ static int add_range(char *range, bool include)
 		last = first;
 	}
 
+	if (first > last)
+		return -1;
+
 	r = malloc(sizeof(*r));
 	if (!r)
 		return -1;
