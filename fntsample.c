@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <stdint.h>
 
 #include "unicode_blocks.h"
 
@@ -47,23 +48,120 @@ static struct option longopts[] = {
   {"other-font-file", 1, 0, 'd'},
   {"postscript-output", 0, 0, 's'},
   {"print-outline", 0, 0, 'l'},
+  {"include-range", 1, 0, 'i'},
+  {"exclude-range", 1, 0, 'x'},
   {0, 0, 0, 0}
+};
+
+struct range {
+	uint32_t first;
+	uint32_t last;
+	bool include;
+	struct range *next;
 };
 
 static const char *font_file_name;
 static const char *other_font_file_name;
 static const char *output_file_name;
-bool postscript_output;
-bool print_outline;
+static bool postscript_output;
+static bool print_outline;
+static struct range *ranges;
+static struct range *last_range;
 
 static void usage(const char *);
+
+static int add_range(char *range, bool include)
+{
+	struct range *r;
+	uint32_t first = 0, last = 0xffffffff;
+	char *minus;
+	char *endptr;
+
+	minus = strchr(range, '-');
+
+	if (minus) {
+		if (minus != range) {
+			*minus = '\0';
+			first = strtoul(range, &endptr, 0);
+			if (*endptr)
+				return -1;
+		}
+
+		if (*(minus + 1)) {
+			last = strtoul(minus + 1, &endptr, 0);
+			if (*endptr)
+				return -1;
+		}
+		else if (minus == range)
+			return -1;
+	}
+	else {
+		first = strtoul(range, &endptr, 0);
+		if (*endptr)
+			return -1;
+		last = first;
+	}
+
+	r = malloc(sizeof(*r));
+	if (!r)
+		return -1;
+
+	r->first = first;
+	r->last = last;
+	r->include = include;
+	r->next = NULL;
+
+	if (ranges)
+		last_range->next = r;
+	else
+		ranges = r;
+
+	last_range = r;
+
+	return 0;
+}
+
+static bool in_range(uint32_t c)
+{
+	bool in = ranges ? (!ranges->include) : 1;
+	struct range *r;
+
+	for (r = ranges; r; r = r->next) {
+		if ((c >= r->first) && (c <= r->last))
+			in = r->include;
+	}
+	return in;
+}
+
+static FT_ULong get_next_char(FT_Face face, FT_ULong charcode, FT_UInt *idx)
+{
+	FT_ULong rval = charcode;
+
+	do {
+		rval = FT_Get_Next_Char(face, rval, idx);
+	} while (*idx && !in_range(rval));
+
+	return rval;
+}
+
+static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
+{
+	FT_ULong rval;
+
+	rval = FT_Get_First_Char(face, idx);
+
+	if (*idx && !in_range(rval))
+		rval = get_next_char(face, rval, idx);
+
+	return rval;
+}
 
 static void parse_options(int argc, char * const argv[])
 {
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sl", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sli:x:", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -99,6 +197,13 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 'l':
 			print_outline = true;
+			break;
+		case 'i':
+		case 'x':
+			if (add_range(optarg, c == 'i')) {
+				usage(argv[0]);
+				exit(1);
+			}
 			break;
 		case '?':
 		default:
@@ -307,7 +412,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 
 			prev_charcode = *charcode;
 			prev_cell = *charcode;
-			*charcode = FT_Get_Next_Char(ft_face, *charcode, &idx);
+			*charcode = get_next_char(ft_face, *charcode, &idx);
 		} while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
 
 		cairo_show_glyphs(cr, glyphs, nglyphs);
@@ -345,7 +450,7 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 
 	outline(0, pageno, fontname);
 
-	charcode = FT_Get_First_Char(ft_face, &idx);
+	charcode = get_first_char(ft_face, &idx);
 
 	while (idx) {
 		block = get_unicode_block(charcode);
@@ -356,7 +461,7 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 					&charcode, block, ft_other_face);
 			pageno += npages;
 		}
-		charcode = FT_Get_Next_Char(ft_face, charcode, &idx);
+		charcode = get_next_char(ft_face, charcode, &idx);
 	}
 }
 
