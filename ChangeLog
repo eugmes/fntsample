@@ -1,3 +1,11 @@
+Changes in version 2.5:
+	* Added support for compiling with non-default fontconfig location
+	* Added support for long options
+	* Made some optimizations to text layout, this should make generated
+	  PDFs smaller
+	* Added options for selecting Unicode ranges to include in samples
+	  (-i and -x)
+
 Changes in version 2.4:
 	* Added script for making pdf files with bookmarks (pdfoutline) and
 	  option for fntsample to print bookmarks information (-l).
