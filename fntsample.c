@@ -476,8 +476,8 @@ static void usage(const char *cmd)
 			"  --other-font-file,   -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
 			"  --postscript-output, -s             Use PostScript format for output instead of PDF\n"
 			"  --print-outline,     -l             Print document outlines data to standard output\n"
-			"  --include-range,     -i RANGE       Show glyphs in RANGE\n"
-			"  --exclude-range,     -x RANGE       Do not show glyphs in RANGE\n");
+			"  --include-range,     -i RANGE       Show characters in RANGE\n"
+			"  --exclude-range,     -x RANGE       Do not show characters in RANGE\n");
 }
 
 static const char *get_font_name(FT_Face face)
