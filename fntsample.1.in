@@ -37,7 +37,7 @@ Make samples of
 Write output to 
 .I OUTPUT-FILE
 .TP
-.BI "\-\-other\-font\-file, -d " OTHER-FONT
+.BI "\-\-other\-font\-file, \-d " OTHER-FONT
 Compare
 .I FONT-FILE
 with
@@ -53,10 +53,10 @@ Use PostScript format for output instead of PDF.
 Print document outlines data to standard output.
 This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
 .TP
-.BI "\-\-include-range, \-i " RANGE
+.BI "\-\-include\-range, \-i " RANGE
 Show characters in \fIRANGE\fP.
 .TP
-.BI "\-\-exclude-range, \-x " RANGE
+.BI "\-\-exclude\-range, \-x " RANGE
 Do not show characters in \fIRANGE\fP.
 .TP
 .BI "\-\-help, \-h"
@@ -71,24 +71,24 @@ Multiple \fB\-i\fP and \fB\-x\fP options can be used.
 .SH EXAMPLES
 .RI "Make PDF samples for " font.ttf " and write them to file " samples.pdf :
 .SAMPLE
-fntsample -f font.ttf -o samples.pdf
+fntsample \-f font.ttf \-o samples.pdf
 .ESAMPLE
 .PP
 .RI "Make PDF samples for " font.ttf ", compare it with " oldfont.ttf 
 .RI "and highlight new glyphs. Write output to file " samples.pdf :
 .SAMPLE
-fntsample -f font.ttf -d oldfont.ttf -o samples.pdf
+fntsample \-f font.ttf \-d oldfont.ttf \-o samples.pdf
 .ESAMPLE
 .PP
 .RI "Make PostScript samples for " font.ttf " and write output to file " samples.ps .
 Show only glyphs for characters whit codes less or equal to U+04FF but exclude U+0370\-U+03FF:
 .SAMPLE
-fntsample -f font.ttf -s -o samples.ps -i -0x04FF -x 0x0370-0x03FF
+fntsample \-f font.ttf \-s \-o samples.ps \-i \-0x04FF \-x 0x0370\-0x03FF
 .ESAMPLE
 .PP
 .RI "Make PDF samples for " font.ttf " and save output to file " samples.pdf " adding outlines to it:"
 .SAMPLE
-fntsample -f font.ttf -o temp.pdf -l > outlines.txt
+fntsample \-f font.ttf \-o temp.pdf \-l > outlines.txt
 pdfoutline temp.pdf outlines.txt samples.pdf
 .ESAMPLE
 .SH AUTHOR
