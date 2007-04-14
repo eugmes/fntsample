@@ -53,8 +53,21 @@ Use PostScript format for output instead of PDF.
 Print document outlines data to standard output.
 This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
 .TP
+.BI "\-\-include-range, \-i " RANGE
+Show characters in \fIRANGE\fP.
+.TP
+.BI "\-\-exclude-range, \-x " RANGE
+Do not show characters in \fIRANGE\fP.
+.TP
 .BI "\-\-help, \-h"
 Display help text and exit
+.P
+Parameter \fIRANGE\fP for \fB\-i\fP and \fB\-x\fP can be given as one integer or a pair of
+integers delimited by minus sign (\-).
+Integers can be specified in decimal, hexadecimal (0x...) or octal (0...) format.
+One integer of a pair can be missing (\-N can be used to specify all characters with codes less
+or equal to N, and N\- for all characters with codes greather or equal to N).
+Multiple \fB\-i\fP and \fB\-x\fP options can be used.
 .SH EXAMPLES
 .RI "Make PDF samples for " font.ttf " and write them to file " samples.pdf :
 .SAMPLE
@@ -67,9 +80,10 @@ fntsample -f font.ttf -o samples.pdf
 fntsample -f font.ttf -d oldfont.ttf -o samples.pdf
 .ESAMPLE
 .PP
-.RI "Make PostScript samples for " font.ttf " and write output to file " samples.ps :
+.RI "Make PostScript samples for " font.ttf " and write output to file " samples.ps .
+Show only glyphs for characters whit codes less or equal to U+04FF but exclude U+0370\-U+03FF:
 .SAMPLE
-fntsample -f font.ttf -s -o samples.ps
+fntsample -f font.ttf -s -o samples.ps -i -0x04FF -x 0x0370-0x03FF
 .ESAMPLE
 .PP
 .RI "Make PDF samples for " font.ttf " and save output to file " samples.pdf " adding outlines to it:"
