@@ -81,7 +81,7 @@ fntsample \-f font.ttf \-d oldfont.ttf \-o samples.pdf
 .ESAMPLE
 .PP
 .RI "Make PostScript samples for " font.ttf " and write output to file " samples.ps .
-Show only glyphs for characters whit codes less or equal to U+04FF but exclude U+0370\-U+03FF:
+Show only glyphs for characters with codes less or equal to U+04FF but exclude U+0370\-U+03FF:
 .SAMPLE
 fntsample \-f font.ttf \-s \-o samples.ps \-i \-0x04FF \-x 0x0370\-0x03FF
 .ESAMPLE
