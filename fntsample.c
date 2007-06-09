@@ -551,10 +551,15 @@ static const char *get_font_name(FT_Face face)
 
 static void init_pango_fonts(void)
 {
-	header_font = pango_font_description_from_string("Sans Bold 12px");
-	font_name_font = pango_font_description_from_string("Serif Bold 12px");
-	table_numbers_font = pango_font_description_from_string("Sans 12px");
-	cell_numbers_font = pango_font_description_from_string("Mono 8px");
+	/* FIXME is this correct? */
+	PangoCairoFontMap *map = (PangoCairoFontMap *) pango_cairo_font_map_get_default();
+
+	pango_cairo_font_map_set_resolution(map, 72.0);
+
+	header_font = pango_font_description_from_string("Sans Bold 12");
+	font_name_font = pango_font_description_from_string("Serif Bold 12");
+	table_numbers_font = pango_font_description_from_string("Sans 12");
+	cell_numbers_font = pango_font_description_from_string("Mono 8");
 }
 
 int main(int argc, char **argv)
