@@ -12,6 +12,7 @@ PKG_CHECK_MODULES([cairo], [cairo])
 PKG_CHECK_MODULES([fontconfig], [fontconfig])
 PKG_CHECK_MODULES([freetype2], [freetype2])
 PKG_CHECK_MODULES([glib], [glib-2.0])
+PKG_CHECK_MODULES([pangocairo], [pangocairo])
 
 AC_SUBST([UNICODE_BLOCKS])
 UNICODE_BLOCKS=/usr/share/unicode/Blocks.txt

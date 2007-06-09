@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <stdint.h>
+#include <pango/pangocairo.h>
 
 #include "unicode_blocks.h"
 
@@ -67,6 +68,11 @@ static bool postscript_output;
 static bool print_outline;
 static struct range *ranges;
 static struct range *last_range;
+
+PangoFontDescription *header_font;
+PangoFontDescription *font_name_font;
+PangoFontDescription *table_numbers_font;
+PangoFontDescription *cell_numbers_font;
 
 static void usage(const char *);
 
@@ -159,6 +165,18 @@ static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
 	return rval;
 }
 
+static PangoLayout *draw_text(cairo_t *cr, PangoFontDescription *ftdesc, const char *text, PangoRectangle *r)
+{
+	PangoLayout *layout;
+
+	layout = pango_cairo_create_layout (cr);
+	pango_layout_set_font_description(layout, ftdesc);
+	pango_layout_set_text(layout, text, -1);
+	pango_layout_get_extents(layout, r, NULL);
+
+	return layout;
+}
+
 static void parse_options(int argc, char * const argv[])
 {
 	for (;;) {
@@ -245,19 +263,18 @@ static void outline(int level, int page, const char *text)
 
 static void draw_header(cairo_t *cr, const char *face_name, const char *range_name)
 {
-	cairo_text_extents_t extents;
+	PangoLayout *layout;
+	PangoRectangle r;
 
-	cairo_select_font_face (cr, "Serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-	cairo_set_font_size (cr, 12.0);
-	cairo_text_extents(cr, face_name, &extents);
-	cairo_move_to(cr, (A4_WIDTH-extents.width)/2.0, 30.0);
-	cairo_show_text(cr, face_name);
+	layout = draw_text(cr, font_name_font, face_name, &r);
+	cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 30.0);
+	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
+	g_object_unref(layout);
 
-	cairo_select_font_face (cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-	cairo_set_font_size (cr, 12.0);
-	cairo_text_extents(cr, range_name, &extents);
-	cairo_move_to(cr, (A4_WIDTH-extents.width)/2.0, 50.0);
-	cairo_show_text(cr, range_name);
+	layout = draw_text(cr, header_font, range_name, &r);
+	cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 50.0);
+	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
+	g_object_unref(layout);
 }
 
 static void draw_cell(cairo_t *cr, double x, double y,
@@ -287,7 +304,8 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
 	double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
 	char buf[9];
-	cairo_text_extents_t extents;
+	PangoLayout *layout;
+	PangoRectangle r;
 
 #define TABLE_H (A4_HEIGHT - ymin_border * 2)
 	cairo_set_line_width(cr, 1.0);
@@ -315,26 +333,26 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	/* draw glyph numbers */
 	buf[1] = '\0';
 #define hexdigs	"0123456789ABCDEF"
-	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 12.0);
 
 	for (i = 0; i < 16; i++) {
 		buf[0] = hexdigs[i];
-		cairo_text_extents(cr, buf, &extents);
-		cairo_move_to(cr, x_min -  extents.x_advance /*+ extents.x_bearing*/ - 5.0,
-				72.0 + (i+0.5) * TABLE_H/16 + extents.height/2);
-		cairo_show_text(cr, buf);
+		layout = draw_text(cr, table_numbers_font, buf, &r);
+		cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
+				72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 		cairo_move_to(cr, x_min + x_cells * cell_width + 5.0,
-				72.0 + (i+0.5) * TABLE_H/16 + extents.height/2);
-		cairo_show_text(cr, buf);
+				72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
+		g_object_unref(layout);
 	}
 
 	for (i = 0; i < x_cells; i++) {
 		snprintf(buf, sizeof(buf), "%03lX", block_start / 16 + i);
-		cairo_text_extents(cr, buf, &extents);
-		cairo_move_to(cr, x_min + i*cell_width + (cell_width - extents.width)/2,
+		layout = draw_text(cr, table_numbers_font, buf, &r);
+		cairo_move_to(cr, x_min + i*cell_width + (cell_width - (double)r.width/PANGO_SCALE)/2,
 				ymin_border - 5.0);
-		cairo_show_text(cr, buf);
+		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
+		g_object_unref(layout);
 	}
 }
 
@@ -355,12 +373,14 @@ static void draw_empty_cell(cairo_t *cr, double x, double y, unsigned long charc
 static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 {
 	char buf[9];
-	cairo_text_extents_t extents;
+	PangoLayout *layout;
+	PangoRectangle r;
 
 	snprintf(buf, sizeof(buf), "%04lX", charcode);
-	cairo_text_extents(cr, buf, &extents);
-	cairo_move_to(cr, x + (cell_width - extents.width)/2.0, y + cell_height - 4.0);
-	cairo_show_text(cr, buf);
+	layout = draw_text(cr, cell_numbers_font, buf, &r);
+	cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - 4.0);
+	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
+	g_object_unref(layout);
 }
 
 static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
@@ -419,9 +439,6 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		} while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
 
 		cairo_show_glyphs(cr, glyphs, nglyphs);
-
-		cairo_select_font_face(cr, "Mono", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr, 8.0);
 
 		for (i = 0; i < tbl_end - tbl_start; i++)
 			if (filled_cells[i])
@@ -532,6 +549,14 @@ static const char *get_font_name(FT_Face face)
 	return fontname;
 }
 
+static void init_pango_fonts(void)
+{
+	header_font = pango_font_description_from_string("Sans Bold 12px");
+	font_name_font = pango_font_description_from_string("Serif Bold 12px");
+	table_numbers_font = pango_font_description_from_string("Sans 12px");
+	cell_numbers_font = pango_font_description_from_string("Mono 8px");
+}
+
 int main(int argc, char **argv)
 {
 	cairo_surface_t *surface;
@@ -590,6 +615,8 @@ int main(int argc, char **argv)
 	}
 
 	cairo_surface_destroy(surface);
+
+	init_pango_fonts();
 
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	draw_glyphs(cr, cr_face, face, fontname, other_face);
