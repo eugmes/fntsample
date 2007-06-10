@@ -51,6 +51,7 @@ static struct option longopts[] = {
   {"print-outline", 0, 0, 'l'},
   {"include-range", 1, 0, 'i'},
   {"exclude-range", 1, 0, 'x'},
+  {"style", 1, 0, 't'},
   {0, 0, 0, 0}
 };
 
@@ -69,12 +70,80 @@ static bool print_outline;
 static struct range *ranges;
 static struct range *last_range;
 
+struct fntsample_style {
+	const char *const name;
+	const char *const default_val;
+	char *val;
+};
+
+static struct fntsample_style styles[] = {
+	{ "header-font", "Sans Bold 12", NULL },
+	{ "font-name-font", "Serif Bold 12", NULL },
+	{ "table-numbers-font", "Sans 12", NULL },
+	{ "cell-numbers-font", "Mono 8", NULL },
+	{ NULL, NULL, NULL }
+};
+
 PangoFontDescription *header_font;
 PangoFontDescription *font_name_font;
 PangoFontDescription *table_numbers_font;
 PangoFontDescription *cell_numbers_font;
 
 static void usage(const char *);
+
+static struct fntsample_style *find_style(const char *name)
+{
+	struct fntsample_style *style = styles;
+
+	for (; style->name; style++) {
+		if (!strcmp(name, style->name))
+			return style;
+	}
+
+	return NULL;
+}
+
+static int set_style(const char *name, const char *val)
+{
+	struct fntsample_style *style;
+	char *new_val;
+
+	style = find_style(name);
+
+	if (!style)
+		return -1;
+
+	new_val = strdup(val);
+	if (!new_val)
+		return -1;
+
+	if (style->val)
+		free(style->val);
+	style->val = new_val;
+	
+	return 0;
+}
+
+static const char *get_style(const char *name)
+{
+	struct fntsample_style *style = find_style(name);
+	
+	if (!style)
+		return NULL;
+
+	return style->val ? style->val : style->default_val;
+}
+
+static int parse_style_string(char *s)
+{
+	char *n;
+
+	n = strchr(s, ':');
+	if (!n)
+		return -1;
+	*n++ = '\0';
+	return set_style(s, n);
+}
 
 static int add_range(char *range, bool include)
 {
@@ -182,7 +251,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sli:x:", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sli:x:t:", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -222,6 +291,12 @@ static void parse_options(int argc, char * const argv[])
 		case 'i':
 		case 'x':
 			if (add_range(optarg, c == 'i')) {
+				usage(argv[0]);
+				exit(1);
+			}
+			break;
+		case 't':
+			if (parse_style_string(optarg) == -1) {
 				usage(argv[0]);
 				exit(1);
 			}
@@ -487,17 +562,23 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 
 static void usage(const char *cmd)
 {
+	const struct fntsample_style *style;
+
 	fprintf(stderr, "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
 			"       %s -h\n\n" , cmd, cmd);
 	fprintf(stderr, "Options:\n"
-			"  --font-file,         -f FONT-FILE   Create samples of FONT-FILE\n"
-			"  --output-file,       -o OUTPUT-FILE Save samples to OUTPUT-FILE\n"
-			"  --help,              -h             Show this information message and exit\n"
-			"  --other-font-file,   -d OTHER-FONT  Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
-			"  --postscript-output, -s             Use PostScript format for output instead of PDF\n"
-			"  --print-outline,     -l             Print document outlines data to standard output\n"
-			"  --include-range,     -i RANGE       Show characters in RANGE\n"
-			"  --exclude-range,     -x RANGE       Do not show characters in RANGE\n");
+			"  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
+			"  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
+			"  --help,              -h              Show this information message and exit\n"
+			"  --other-font-file,   -d OTHER-FONT   Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
+			"  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
+			"  --print-outline,     -l              Print document outlines data to standard output\n"
+			"  --include-range,     -i RANGE        Show characters in RANGE\n"
+			"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
+			"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n");
+	fprintf(stderr, "\nSupported styles (and default values):\n");
+	for (style = styles; style->name; style++)
+		fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
 }
 
 static const char *get_font_name(FT_Face face)
@@ -556,10 +637,10 @@ static void init_pango_fonts(void)
 
 	pango_cairo_font_map_set_resolution(map, 72.0);
 
-	header_font = pango_font_description_from_string("Sans Bold 12");
-	font_name_font = pango_font_description_from_string("Serif Bold 12");
-	table_numbers_font = pango_font_description_from_string("Sans 12");
-	cell_numbers_font = pango_font_description_from_string("Mono 8");
+	header_font = pango_font_description_from_string(get_style("header-font"));
+	font_name_font = pango_font_description_from_string(get_style("font-name-font"));
+	table_numbers_font = pango_font_description_from_string(get_style("table-numbers-font"));
+	cell_numbers_font = pango_font_description_from_string(get_style("cell-numbers-font"));
 }
 
 int main(int argc, char **argv)
