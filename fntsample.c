@@ -79,7 +79,7 @@ struct fntsample_style {
 static struct fntsample_style styles[] = {
 	{ "header-font", "Sans Bold 12", NULL },
 	{ "font-name-font", "Serif Bold 12", NULL },
-	{ "table-numbers-font", "Sans 12", NULL },
+	{ "table-numbers-font", "Sans 10", NULL },
 	{ "cell-numbers-font", "Mono 8", NULL },
 	{ NULL, NULL, NULL }
 };
