@@ -59,6 +59,10 @@ Show characters in \fIRANGE\fP.
 .BI "\-\-exclude\-range, \-x " RANGE
 Do not show characters in \fIRANGE\fP.
 .TP
+.BI "\-\-style, \-t \(dq" STYLE ": " VAL "\(dq"
+Set \fISTYLE\fP to value \fIVAL\fP.
+Run \fBfntsample\fP with option \fB\-\-help\fP to see list of styles and default values.
+.TP
 .BI "\-\-help, \-h"
 Display help text and exit
 .P
