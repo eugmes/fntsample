@@ -84,10 +84,10 @@ static struct fntsample_style styles[] = {
 	{ NULL, NULL, NULL }
 };
 
-PangoFontDescription *header_font;
-PangoFontDescription *font_name_font;
-PangoFontDescription *table_numbers_font;
-PangoFontDescription *cell_numbers_font;
+static PangoFontDescription *header_font;
+static PangoFontDescription *font_name_font;
+static PangoFontDescription *table_numbers_font;
+static PangoFontDescription *cell_numbers_font;
 
 static void usage(const char *);
 
