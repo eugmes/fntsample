@@ -1,3 +1,9 @@
+Changes in version 2.6:
+	* pango is now used for drawing headers and numbers in font samples
+	* Font sizes are now tunable using "--style" option. Default font
+	  size for digits was made smaller for better look with fonts containing
+	  glyphs outside BMP
+
 Changes in version 2.5:
 	* Added support for compiling with non-default fontconfig location
 	* Added support for long options
