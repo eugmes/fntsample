@@ -470,11 +470,10 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 	idx = FT_Get_Char_Index(ft_face, *charcode);
 
 	do {
-		unsigned long masked_charcode = (*charcode & ~0xffL) + (block->start & 0xf0);
-		unsigned long tbl_start = (masked_charcode > block->start) ?
-			masked_charcode : block->start;
-		unsigned long tbl_end = ((masked_charcode + 0x100L) > block->end) ?
-			(block->end | 0xf) + 1 : masked_charcode + 0x100L;
+		unsigned long offset = ((*charcode - block->start) / 0x100) * 0x100;
+		unsigned long tbl_start = block->start + offset;
+		unsigned long tbl_end = tbl_start + 0xFF > block->end ?
+			block->end + 1 : tbl_start + 0x100;
 		unsigned int rows = (tbl_end - tbl_start) / 16;
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
 		unsigned long i;
