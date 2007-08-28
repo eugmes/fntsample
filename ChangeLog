@@ -1,3 +1,9 @@
+Changes in version 2.7:
+	* configure now checks for pangocairo >= 1.16, older pango does not
+	  have pango_layout_get_line_readonly() required by fntsample
+	* Fixed crash (segmentation fault) with some values for -i (and maybe
+	  -x)
+
 Changes in version 2.6:
 	* pango is now used for drawing headers and numbers in font samples
 	* Font sizes are now tunable using "--style" option. Default font
