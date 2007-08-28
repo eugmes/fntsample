@@ -1,4 +1,4 @@
-AC_INIT([fntsample], [2.6], [eugen@debian.org])
+AC_INIT([fntsample], [2.7], [eugen@debian.org])
 AC_CONFIG_SRCDIR([fntsample.c])
 AC_CONFIG_HEADER([config.h])
 
