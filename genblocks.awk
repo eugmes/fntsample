@@ -9,7 +9,8 @@ BEGIN {
 
 /^[^#]/ {
 	if (split($0, a, /\.\.|; /) == 3) {
-		print "\t{0x" a[1] ", 0x" a[2] ", \"" a[3] "\"},";
+		# remove any ^M characters, like ones in dos line breaks
+		print "\t{0x" a[1] ", 0x" a[2] ", \"" gensub(/\r/, "", "G", a[3]) "\"},";
 	}
 }
 

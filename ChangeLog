@@ -1,3 +1,7 @@
+Changes in version 2.8:
+	* It is now possible to use file Blocks.txt with dos line endings,
+	  like in zipped Unicode 5.1 UCD.
+
 Changes in version 2.7:
 	* configure now checks for pangocairo >= 1.16, older pango does not
 	  have pango_layout_get_line_readonly() required by fntsample
