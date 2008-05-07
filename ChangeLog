@@ -1,3 +1,6 @@
+Changes in version XXX:
+	* Make it buildable with mawk again.
+
 Changes in version 2.8:
 	* It is now possible to use file Blocks.txt with dos line endings,
 	  like in zipped Unicode 5.1 UCD.
