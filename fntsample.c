@@ -1,4 +1,4 @@
-/* Copyright (C) 2007 Eugeniy Meshcheryakov <eugen@debian.org>
+/* Copyright © 2007-2008 Євгеній Мещеряков <eugen@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,9 @@
 #define ymin_border	(72.0)
 #define cell_width	((A4_WIDTH - 2*xmin_border) / 16)
 #define cell_height	((A4_HEIGHT - 2*ymin_border) / 16)
+
+#define CELL_X(x_min, N)	((x_min) + cell_width * ((N) / 16))
+#define CELL_Y(N)	(ymin_border + cell_height * ((N) % 16))
 
 static struct option longopts[] = {
   {"font-file", 1, 0, 'f'},
@@ -145,6 +148,11 @@ static int parse_style_string(char *s)
 	return set_style(s, n);
 }
 
+/*
+ * Update output range.
+ *
+ * Returns -1 on error.
+ */
 static int add_range(char *range, bool include)
 {
 	struct range *r;
@@ -199,6 +207,10 @@ static int add_range(char *range, bool include)
 	return 0;
 }
 
+/*
+ * Check if character with the given code belongs
+ * to output range specified by the user.
+ */
 static bool in_range(uint32_t c)
 {
 	bool in = ranges ? (!ranges->include) : 1;
@@ -211,6 +223,13 @@ static bool in_range(uint32_t c)
 	return in;
 }
 
+/*
+ * Get glyph index for the next glyph from the given font face, that
+ * represents character from output range specified by the user.
+ *
+ * Returns character code, updates 'idx'.
+ * 'idx' can became 0 if there are no more glyphs.
+ */
 static FT_ULong get_next_char(FT_Face face, FT_ULong charcode, FT_UInt *idx)
 {
 	FT_ULong rval = charcode;
@@ -222,6 +241,13 @@ static FT_ULong get_next_char(FT_Face face, FT_ULong charcode, FT_UInt *idx)
 	return rval;
 }
 
+/*
+ * Locate first character from the given font face that belongs
+ * to the user-specified output range.
+ *
+ * Returns character code, updates 'idx' with glyph index.
+ * Glyph index can became 0 if there are no matching glyphs in the font.
+ */
 static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
 {
 	FT_ULong rval;
@@ -234,6 +260,10 @@ static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
 	return rval;
 }
 
+/*
+ * Create Pango layout for the given text.
+ * Updates 'r' with text extents.
+ */
 static PangoLayout *draw_text(cairo_t *cr, PangoFontDescription *ftdesc, const char *text, PangoRectangle *r)
 {
 	PangoLayout *layout;
@@ -314,6 +344,10 @@ static void parse_options(int argc, char * const argv[])
 	}
 }
 
+/*
+ * Locate unicode block that contains given character code.
+ * Returns this block or NULL if not found.
+ */
 static const struct unicode_block *get_unicode_block(unsigned long charcode)
 {
 	const struct unicode_block *block;
@@ -325,18 +359,28 @@ static const struct unicode_block *get_unicode_block(unsigned long charcode)
 	return NULL;
 }
 
-static int is_in_block(unsigned long charcode, const struct unicode_block *block)
+/*
+ * Check if the given character code belongs to the given Unicode block.
+ */
+static bool is_in_block(unsigned long charcode, const struct unicode_block *block)
 {
 	return ((charcode >= block->start) && (charcode <= block->end));
 }
 
+/*
+ * Format and print outline information, if requested by the user.
+ */
 static void outline(int level, int page, const char *text)
 {
 	if (print_outline)
 		printf("%d %d %s\n", level, page, text);
 }
 
-static void draw_header(cairo_t *cr, const char *face_name, const char *range_name)
+/*
+ * Draw header of a page.
+ * Header shows font name and current Unicode block.
+ */
+static void draw_header(cairo_t *cr, const char *face_name, const char *block_name)
 {
 	PangoLayout *layout;
 	PangoRectangle r;
@@ -346,23 +390,33 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *range_na
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
 
-	layout = draw_text(cr, header_font, range_name, &r);
+	layout = draw_text(cr, header_font, block_name, &r);
 	cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 50.0);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
 }
 
-static void draw_cell(cairo_t *cr, double x, double y,
-		unsigned long idx, bool highlight, cairo_glyph_t *glyph)
+/*
+ * Highlight the cell with given coordinates.
+ * Used to highlight new glyphs.
+ */
+static void highlight_cell(cairo_t *cr, double x, double y)
+{
+	cairo_save(cr);
+	cairo_set_source_rgb(cr, 1.0, 1.0, 0.6);
+	cairo_rectangle(cr, x, y, cell_width, cell_height);
+	cairo_fill(cr);
+	cairo_restore(cr);
+}
+
+/*
+ * Try to place glyph with the given index at the middle of the cell.
+ * Changes argument 'glyph'
+ */
+static void position_glyph(cairo_t *cr, double x, double y,
+		unsigned long idx, cairo_glyph_t *glyph)
 {
 	cairo_text_extents_t extents;
-
-	if (highlight) {
-		cairo_set_source_rgb(cr, 1.0, 1.0, 0.6);
-		cairo_rectangle(cr, x, y, cell_width, cell_height);
-		cairo_fill(cr);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	}
 
 	*glyph = (cairo_glyph_t){idx, 0, 0};
 
@@ -372,6 +426,9 @@ static void draw_cell(cairo_t *cr, double x, double y,
 	glyph->y += y + cell_height / 2.0;
 }
 
+/*
+ * Draw table grid with row and column numbers.
+ */
 static void draw_grid(cairo_t *cr, unsigned int x_cells,
 		unsigned long block_start)
 {
@@ -431,8 +488,12 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	}
 }
 
-static void draw_empty_cell(cairo_t *cr, double x, double y, unsigned long charcode)
+/*
+ * Fill empty cell. Color of the fill depends on the character properties.
+ */
+static void fill_empty_cell(cairo_t *cr, double x, double y, unsigned long charcode)
 {
+	cairo_save(cr);
 	if (g_unichar_isdefined(charcode)) {
 		if (g_unichar_iscntrl(charcode))
 			cairo_set_source_rgb(cr, 0.0, 0.0, 0.5);
@@ -441,10 +502,12 @@ static void draw_empty_cell(cairo_t *cr, double x, double y, unsigned long charc
 	}
 	cairo_rectangle(cr, x, y, cell_width, cell_height);
 	cairo_fill(cr);
-	if (g_unichar_isdefined(charcode))
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_restore(cr);
 }
 
+/*
+ * Draw label with character code.
+ */
 static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 {
 	char buf[9];
@@ -458,6 +521,15 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 	g_object_unref(layout);
 }
 
+/*
+ * Draws tables for all characters in the given Unicode block.
+ * Use font described by face and ft_face. Start from character
+ * with given charcode (it should belong to the given Unicode
+ * block). After return 'charcode' equals the last character code
+ * of the block.
+ *
+ * Returns number of pages drawn.
+ */
 static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		FT_Face ft_face, const char *fontname, unsigned long *charcode,
 		const struct unicode_block *block, FT_Face ft_other_face)
@@ -478,7 +550,6 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
 		unsigned long i;
 		bool filled_cells[256]; /* 16x16 glyphs max */
-		bool highlight = false;
 
 		/* XXX WARNING: not reentrant! */
 		static cairo_glyph_t glyphs[256];
@@ -492,37 +563,49 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 
 		cairo_set_font_face(cr, face);
 		cairo_set_font_size(cr, 20.0);
+		/*
+		 * Fill empty cells and calculate coordinates of the glyphs.
+		 * Also highlight cells if needed.
+		 */
 		do {
+			/* the current glyph position in the table */
+			int charpos = *charcode - tbl_start;
+
+			/* fill empty cells before the current glyph */
 			for (i = prev_cell + 1; i < *charcode; i++) {
-				draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
-							ymin_border + cell_height*((i - tbl_start) % 16), i);
+				int pos = i - tbl_start;
+				fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
 			}
 
-			if (ft_other_face)
-				highlight = !FT_Get_Char_Index(ft_other_face, *charcode);
+			/* if it is new glyph - highlight the cell */
+			if (ft_other_face && !FT_Get_Char_Index(ft_other_face, *charcode))
+				highlight_cell(cr, CELL_X(x_min, charpos), CELL_Y(charpos));
 
-			draw_cell(cr, x_min + cell_width*((*charcode - tbl_start) / 16),
-					ymin_border + cell_height*((*charcode - tbl_start) % 16),
-					idx, highlight, &glyphs[nglyphs++]);
+			/* For now just position glyphs. They will be shown later,
+			 * to make output more efficient. */
+			position_glyph(cr, CELL_X(x_min, charpos), CELL_Y(charpos),
+					idx, &glyphs[nglyphs++]);
 
-			filled_cells[*charcode - tbl_start] = true;
+			filled_cells[charpos] = true;
 
 			prev_charcode = *charcode;
 			prev_cell = *charcode;
 			*charcode = get_next_char(ft_face, *charcode, &idx);
 		} while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
 
+		/* Fill remaining empty cells */
+		for (i = prev_cell + 1; i < tbl_end; i++) {
+			int pos = i - tbl_start;
+			fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
+		}
+
+		/* Show previously positioned glyphs */
 		cairo_show_glyphs(cr, glyphs, nglyphs);
 
 		for (i = 0; i < tbl_end - tbl_start; i++)
 			if (filled_cells[i])
-				draw_charcode(cr, x_min + cell_width*(i / 16), ymin_border + cell_height*(i % 16),
+				draw_charcode(cr, CELL_X(x_min, i), CELL_Y(i),
 						i + tbl_start);
-		for (i = prev_cell + 1; i < tbl_end; i++) {
-			draw_empty_cell(cr, x_min + cell_width*((i - tbl_start) / 16),
-					ymin_border + cell_height*((i - tbl_start) % 16),
-					i);
-		}
 
 		draw_grid(cr, rows, tbl_start);
 		npages++;
@@ -534,6 +617,9 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 	return npages;
 }
 
+/*
+ * The main drawing function.
+ */
 static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 		const char *fontname, FT_Face ft_other_face)
 {
@@ -559,6 +645,9 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 	}
 }
 
+/*
+ * Print usage instructions and default values for styles
+ */
 static void usage(const char *cmd)
 {
 	const struct fntsample_style *style;
@@ -580,6 +669,11 @@ static void usage(const char *cmd)
 		fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
 }
 
+/*
+ * Try to get font name for a given font face.
+ * Returned name should be free()'d after use.
+ * If function cannot allocate memory, it terminates the program.
+ */
 static const char *get_font_name(FT_Face face)
 {
 	FT_Error error;
@@ -629,6 +723,9 @@ static const char *get_font_name(FT_Face face)
 	return fontname;
 }
 
+/*
+ * Initialize fonts used to print table heders and character codes.
+ */
 static void init_pango_fonts(void)
 {
 	/* FIXME is this correct? */
