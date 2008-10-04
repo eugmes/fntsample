@@ -262,8 +262,9 @@ static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
 /*
  * Create Pango layout for the given text.
  * Updates 'r' with text extents.
+ * Returned layout should be freed using g_object_unref().
  */
-static PangoLayout *draw_text(cairo_t *cr, PangoFontDescription *ftdesc, const char *text, PangoRectangle *r)
+static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const char *text, PangoRectangle *r)
 {
 	PangoLayout *layout;
 
@@ -384,12 +385,12 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *block_na
 	PangoLayout *layout;
 	PangoRectangle r;
 
-	layout = draw_text(cr, font_name_font, face_name, &r);
+	layout = layout_text(cr, font_name_font, face_name, &r);
 	cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 30.0);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
 
-	layout = draw_text(cr, header_font, block_name, &r);
+	layout = layout_text(cr, header_font, block_name, &r);
 	cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 50.0);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
@@ -467,7 +468,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 
 	for (i = 0; i < 16; i++) {
 		buf[0] = hexdigs[i];
-		layout = draw_text(cr, table_numbers_font, buf, &r);
+		layout = layout_text(cr, table_numbers_font, buf, &r);
 		cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
 				72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
 		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -479,7 +480,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 
 	for (i = 0; i < x_cells; i++) {
 		snprintf(buf, sizeof(buf), "%03lX", block_start / 16 + i);
-		layout = draw_text(cr, table_numbers_font, buf, &r);
+		layout = layout_text(cr, table_numbers_font, buf, &r);
 		cairo_move_to(cr, x_min + i*cell_width + (cell_width - (double)r.width/PANGO_SCALE)/2,
 				ymin_border - 5.0);
 		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -514,7 +515,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 	PangoRectangle r;
 
 	snprintf(buf, sizeof(buf), "%04lX", charcode);
-	layout = draw_text(cr, cell_numbers_font, buf, &r);
+	layout = layout_text(cr, cell_numbers_font, buf, &r);
 	cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - 4.0);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
