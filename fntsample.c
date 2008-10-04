@@ -120,14 +120,14 @@ static int set_style(const char *name, const char *val)
 	if (style->val)
 		free(style->val);
 	style->val = new_val;
-	
+
 	return 0;
 }
 
 static const char *get_style(const char *name)
 {
 	struct fntsample_style *style = find_style(name);
-	
+
 	if (!style)
 		return NULL;
 
