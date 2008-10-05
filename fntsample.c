@@ -35,6 +35,7 @@
 #include <locale.h>
 
 #include "unicode_blocks.h"
+#include "config.h"
 
 #define _(str)	gettext(str)
 
@@ -822,6 +823,10 @@ int main(int argc, char **argv)
 	const char *fontname; /* full name of the font */
 	cairo_status_t cr_status;
 	cairo_scaled_font_t *cr_font;
+
+	setsetlocale(LC_ALL, "");
+	bindtextdomain(PACKAGE, LOCALEDIR);
+	textdomain(PACKAGE);
 
 	parse_options(argc, argv);
 
