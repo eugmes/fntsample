@@ -1,6 +1,6 @@
 AM_CFLAGS = -Wall -W -Wwrite-strings -Wstrict-prototypes -pedantic
 bin_PROGRAMS = fntsample
-dist_bin_SCRIPTS = pdfoutline
+bin_SCRIPTS = pdfoutline
 
 fntsample_SOURCES = fntsample.c unicode_blocks.h
 nodist_fntsample_SOURCES = unicode_blocks.c
@@ -10,10 +10,13 @@ fntsample_LDADD = $(cairo_LIBS) $(fontconfig_LIBS) $(freetype2_LIBS) $(glib_LIBS
 
 nodist_man_MANS = fntsample.1 pdfoutline.1
 
-EXTRA_DIST = config.rpath  genblocks.awk
-CLEANFILES = unicode_blocks.c
+EXTRA_DIST = config.rpath genblocks.awk pdfoutline.pl
+CLEANFILES = unicode_blocks.c $(bin_SCRIPTS)
 
 unicode_blocks.c: genblocks.awk
 	$(AWK) -f $(srcdir)/genblocks.awk $(UNICODE_BLOCKS) > unicode_blocks.c
+
+pdfoutline: pdfoutline.pl Makefile
+	cp pdfoutline.pl pdfoutline
 
 SUBDIRS = po
