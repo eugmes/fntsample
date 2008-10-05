@@ -824,7 +824,7 @@ int main(int argc, char **argv)
 	cairo_status_t cr_status;
 	cairo_scaled_font_t *cr_font;
 
-	setsetlocale(LC_ALL, "");
+	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
 
