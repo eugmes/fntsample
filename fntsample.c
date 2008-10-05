@@ -31,8 +31,12 @@
 #include <stdint.h>
 #include <pango/pangocairo.h>
 #include <math.h>
+#include <libintl.h>
+#include <locale.h>
 
 #include "unicode_blocks.h"
+
+#define _(str)	gettext(str)
 
 #define A4_WIDTH	(8.3*72)
 #define A4_HEIGHT	(11.7*72)
@@ -294,14 +298,14 @@ static void parse_options(int argc, char * const argv[])
 		switch (c) {
 		case 'f':
 			if (font_file_name) {
-				fprintf(stderr, "Font file name should be given only once!\n");
+				fprintf(stderr, _("Font file name should be given only once!\n"));
 				exit(1);
 			}
 			font_file_name = optarg;
 			break;
 		case 'o':
 			if (output_file_name) {
-				fprintf(stderr, "Output file name should be given only once!\n");
+				fprintf(stderr, _("Output file name should be given only once!\n"));
 				exit(1);
 			}
 			output_file_name = optarg;
@@ -312,7 +316,7 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 'd':
 			if (other_font_file_name) {
-				fprintf(stderr, "Font file name should be given only once!\n");
+				fprintf(stderr, _("Font file name should be given only once!\n"));
 				exit(1);
 			}
 			other_font_file_name = optarg;
@@ -656,9 +660,9 @@ static void usage(const char *cmd)
 {
 	const struct fntsample_style *style;
 
-	fprintf(stderr, "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
-			"       %s -h\n\n" , cmd, cmd);
-	fprintf(stderr, "Options:\n"
+	fprintf(stderr, _("Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
+			"       %s -h\n\n") , cmd, cmd);
+	fprintf(stderr, _("Options:\n"
 			"  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
 			"  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
 			"  --help,              -h              Show this information message and exit\n"
@@ -667,8 +671,8 @@ static void usage(const char *cmd)
 			"  --print-outline,     -l              Print document outlines data to standard output\n"
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
 			"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
-			"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n");
-	fprintf(stderr, "\nSupported styles (and default values):\n");
+			"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"));
+	fprintf(stderr, _("\nSupported styles (and default values):\n"));
 	for (style = styles; style->name; style++)
 		fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
 }
@@ -784,12 +788,12 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 	/* Use some magic to find the best font size... */
 	double tgt_size = cell_height - cell_glyph_bot_offset - 2;
 	if (tgt_size <= 0) {
-		fprintf(stderr, "Not enough space for rendering glyphs. Make cell font smaller.\n");
+		fprintf(stderr, _("Not enough space for rendering glyphs. Make cell font smaller.\n"));
 		exit(5);
 	}
 	double act_size = extents.ascent + extents.descent;
 	if (act_size <= 0) {
-		fprintf(stderr, "The font has strange metrics: ascent + descent = %g\n", act_size);
+		fprintf(stderr, _("The font has strange metrics: ascent + descent = %g\n"), act_size);
 		exit(5);
 	}
 	double scale = tgt_size / act_size;
@@ -823,13 +827,13 @@ int main(int argc, char **argv)
 
 	error = FT_Init_FreeType(&library);
 	if (error) {
-		fprintf(stderr, "%s: freetype error\n", argv[0]);
+		fprintf(stderr, _("%s: freetype error\n"), argv[0]);
 		exit(3);
 	}
 
 	error = FT_New_Face(library, font_file_name, 0, &face);
 	if (error) {
-		fprintf(stderr, "%s: failed to create new face\n", argv[0]);
+		fprintf(stderr, _("%s: failed to create new face\n"), argv[0]);
 		exit(4);
 	}
 
@@ -838,7 +842,7 @@ int main(int argc, char **argv)
 	if (other_font_file_name) {
 		error = FT_New_Face(library, other_font_file_name, 0, &other_face);
 		if (error) {
-			fprintf(stderr, "%s: failed to create new face\n", argv[0]);
+			fprintf(stderr, _("%s: failed to create new face\n"), argv[0]);
 			exit(4);
 		}
 	}
@@ -850,7 +854,7 @@ int main(int argc, char **argv)
 
 	cr_status = cairo_surface_status(surface);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
-		fprintf(stderr, "%s: failed to create cairo surface: %s\n",
+		fprintf(stderr, _("%s: failed to create cairo surface: %s\n"),
 				argv[0], cairo_status_to_string(cr_status));
 		exit(1);
 	}
@@ -858,7 +862,7 @@ int main(int argc, char **argv)
 	cr = cairo_create(surface);
 	cr_status = cairo_status(cr);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
-		fprintf(stderr, "%s: cairo_create failed: %s\n",
+		fprintf(stderr, _("%s: cairo_create failed: %s\n"),
 				argv[0], cairo_status_to_string(cr_status));
 		exit(1);
 	}
