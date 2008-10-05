@@ -30,6 +30,7 @@
 #include <getopt.h>
 #include <stdint.h>
 #include <pango/pangocairo.h>
+#include <math.h>
 
 #include "unicode_blocks.h"
 
@@ -90,6 +91,10 @@ static PangoFontDescription *header_font;
 static PangoFontDescription *font_name_font;
 static PangoFontDescription *table_numbers_font;
 static PangoFontDescription *cell_numbers_font;
+
+static double cell_label_offset;
+static double cell_glyph_bot_offset;
+static double glyph_baseline_offset;
 
 static void usage(const char *);
 
@@ -423,7 +428,7 @@ static void position_glyph(cairo_t *cr, double x, double y,
 	cairo_glyph_extents(cr, glyph, 1, &extents);
 
 	glyph->x += x + (cell_width - extents.width)/2.0 - extents.x_bearing;
-	glyph->y += y + cell_height / 2.0;
+	glyph->y += y + glyph_baseline_offset;
 }
 
 /*
@@ -516,7 +521,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 
 	snprintf(buf, sizeof(buf), "%04lX", charcode);
 	layout = layout_text(cr, cell_numbers_font, buf, &r);
-	cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - 4.0);
+	cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - cell_label_offset);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
 }
@@ -530,7 +535,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  *
  * Returns number of pages drawn.
  */
-static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
+static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		FT_Face ft_face, const char *fontname, unsigned long *charcode,
 		const struct unicode_block *block, FT_Face ft_other_face)
 {
@@ -561,8 +566,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 
 		memset(filled_cells, '\0', sizeof(filled_cells));
 
-		cairo_set_font_face(cr, face);
-		cairo_set_font_size(cr, 20.0);
+		cairo_set_scaled_font(cr, font);
 		/*
 		 * Fill empty cells and calculate coordinates of the glyphs.
 		 * Also highlight cells if needed.
@@ -620,7 +624,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_font_face_t *face,
 /*
  * The main drawing function.
  */
-static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
+static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
 		const char *fontname, FT_Face ft_other_face)
 {
 	FT_ULong charcode;
@@ -637,7 +641,7 @@ static void draw_glyphs(cairo_t *cr, cairo_font_face_t *face, FT_Face ft_face,
 		if (block) {
 			int npages;
 			outline(1, pageno, block->name);
-			npages = draw_unicode_block(cr, face, ft_face, fontname,
+			npages = draw_unicode_block(cr, font, ft_face, fontname,
 					&charcode, block, ft_other_face);
 			pageno += npages;
 		}
@@ -739,6 +743,71 @@ static void init_pango_fonts(void)
 	cell_numbers_font = pango_font_description_from_string(get_style("cell-numbers-font"));
 }
 
+/*
+ * Calculate various offsets.
+ */
+static void calculate_offsets(cairo_t *cr)
+{
+	PangoRectangle extents;
+	/* Assume that vertical extents does not depend on actual text */
+	PangoLayout *l = layout_text(cr, cell_numbers_font, "0123456789ABCDEF", &extents);
+	g_object_unref(l);
+	/* Unsolved mistery of pango's font metrics.... */
+	double digits_ascent = pango_units_to_double(PANGO_DESCENT(extents));
+	double digits_descent = -pango_units_to_double(PANGO_ASCENT(extents));
+
+	cell_label_offset = digits_descent + 2;
+	cell_glyph_bot_offset = cell_label_offset + digits_ascent + 2;
+}
+
+/*
+ * Create cairo scaled font with the best size (hopefuly...)
+ */
+static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
+{
+	cairo_font_face_t *cr_face = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
+	cairo_matrix_t font_matrix;
+	cairo_matrix_t ctm;
+	cairo_font_options_t *options = cairo_font_options_create();
+	cairo_scaled_font_t *cr_font;
+	cairo_font_extents_t extents;
+
+
+	/* First create font with size 1 and measure it */
+	cairo_matrix_init_identity(&font_matrix);
+	cairo_matrix_init_identity(&ctm);
+	/* Turn off rounding, so we can get real metrics */
+	cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF);
+	cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
+	cairo_scaled_font_extents(cr_font, &extents);
+
+	/* Use some magic to find the best font size... */
+	double tgt_size = cell_height - cell_glyph_bot_offset - 2;
+	if (tgt_size <= 0) {
+		fprintf(stderr, "Not enough space for rendering glyphs. Make cell font smaller.\n");
+		exit(5);
+	}
+	double act_size = extents.ascent + extents.descent;
+	if (act_size <= 0) {
+		fprintf(stderr, "The font has strange metrics: ascent + descent = %g\n", act_size);
+		exit(5);
+	}
+	double scale = tgt_size / act_size;
+	if (scale > 1)
+		scale = trunc(scale); // just to make numbers nicer
+	if (scale > 20)
+		scale = 20; // Do not make font larger than in previous versions
+
+	cairo_scaled_font_destroy(cr_font);
+
+	/* Create the font once again, but this time scaled */
+	cairo_matrix_init_scale(&font_matrix, scale, scale);
+	cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
+	cairo_scaled_font_extents(cr_font, &extents);
+	glyph_baseline_offset = (tgt_size - (extents.ascent + extents.descent)) / 2 + 2 + extents.ascent;
+	return cr_font;
+}
+
 int main(int argc, char **argv)
 {
 	cairo_surface_t *surface;
@@ -747,8 +816,8 @@ int main(int argc, char **argv)
 	FT_Library library;
 	FT_Face face, other_face = NULL;
 	const char *fontname; /* full name of the font */
-	cairo_font_face_t *cr_face;
 	cairo_status_t cr_status;
+	cairo_scaled_font_t *cr_font;
 
 	parse_options(argc, argv);
 
@@ -765,8 +834,6 @@ int main(int argc, char **argv)
 	}
 
 	fontname = get_font_name(face);
-
-	cr_face = cairo_ft_font_face_create_for_ft_face(face, 0);
 
 	if (other_font_file_name) {
 		error = FT_New_Face(library, other_font_file_name, 0, &other_face);
@@ -799,9 +866,11 @@ int main(int argc, char **argv)
 	cairo_surface_destroy(surface);
 
 	init_pango_fonts();
+	calculate_offsets(cr);
+	cr_font = create_default_font(face);
 
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	draw_glyphs(cr, cr_face, face, fontname, other_face);
+	draw_glyphs(cr, cr_font, face, fontname, other_face);
 	cairo_destroy(cr);
 	return 0;
 }
