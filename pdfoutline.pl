@@ -33,7 +33,7 @@
 
 use strict;
 use PDF::API2;
-use Locale::TextDomain('fntsample');
+use Locale::TextDomain('##PACKAGE##', '##LOCALEDIR##');
 use POSIX qw(:locale_h);
 use subs qw(add_outlines);
 

@@ -19,6 +19,6 @@ unicode_blocks.c: genblocks.awk
 	$(AWK) -f $(srcdir)/genblocks.awk $(UNICODE_BLOCKS) > unicode_blocks.c
 
 pdfoutline: pdfoutline.pl Makefile
-	cp pdfoutline.pl pdfoutline
+	$(SED) -e 's|##PACKAGE##|$(PACKAGE)|' -e 's|##LOCALEDIR##|$(localedir)|' pdfoutline.pl > pdfoutline
 
 SUBDIRS = po

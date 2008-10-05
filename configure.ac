@@ -9,6 +9,7 @@ AM_GNU_GETTEXT([external])
 
 AC_PROG_CC_C99
 AC_PROG_AWK
+AC_PROG_SED
 
 PKG_CHECK_MODULES([cairo], [cairo])
 PKG_CHECK_MODULES([fontconfig], [fontconfig])
