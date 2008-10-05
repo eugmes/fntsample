@@ -5,6 +5,8 @@ AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([foreign 1.7])
 AM_MAINTAINER_MODE
 
+AM_GNU_GETTEXT([external])
+
 AC_PROG_CC_C99
 AC_PROG_AWK
 
@@ -34,5 +36,5 @@ fi
 DATE=`date +%F`
 AC_SUBST([DATE])
 
-AC_CONFIG_FILES([Makefile fntsample.1 pdfoutline.1])
+AC_CONFIG_FILES([Makefile fntsample.1 pdfoutline.1 po/Makefile.in])
 AC_OUTPUT
