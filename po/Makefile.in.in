@@ -332,7 +332,7 @@ info dvi ps pdf html tags TAGS ctags CTAGS ID:
 mostlyclean:
 	rm -f remove-potcdate.sed
 	rm -f stamp-poT
-	rm -f core core.* $(DOMAIN).po $(DOMAIN).1po $(DOMAIN).2po *.new.po $(GMOFILES)
+	rm -f core core.* $(DOMAIN).po $(DOMAIN).1po $(DOMAIN).2po *.new.po stamp-po $(GMOFILES)
 	rm -fr *.o
 
 clean: mostlyclean
@@ -356,7 +356,7 @@ dist2: stamp-po $(DISTFILES)
 	  dists="$$dists Makevars.template"; \
 	fi; \
 	if test -f $(srcdir)/$(DOMAIN).pot; then \
-	  dists="$$dists $(DOMAIN).pot stamp-po"; \
+	  dists="$$dists $(DOMAIN).pot"; \
 	fi; \
 	if test -f $(srcdir)/ChangeLog; then \
 	  dists="$$dists ChangeLog"; \
