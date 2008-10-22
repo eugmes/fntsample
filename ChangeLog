@@ -1,6 +1,10 @@
-Changes in version XXX:
+Changes in version 3.0:
 	* Make it buildable with mawk again.
 	* Switch to GPLv3.
+	* Added localization support using gettext.
+	* Added Ukrainian translation.
+	* Added font scaling for fonts with large vertical metrics,
+	  to better work with fonts like TibetanMachine
 
 Changes in version 2.8:
 	* It is now possible to use file Blocks.txt with dos line endings,
