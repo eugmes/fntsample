@@ -838,7 +838,7 @@ int main(int argc, char **argv)
 
 	error = FT_New_Face(library, font_file_name, 0, &face);
 	if (error) {
-		fprintf(stderr, _("%s: failed to create new font face\n"), argv[0]);
+		fprintf(stderr, _("%s: failed to open font file %s\n"), argv[0], font_file_name);
 		exit(4);
 	}
 
