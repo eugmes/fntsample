@@ -832,6 +832,7 @@ int main(int argc, char **argv)
 
 	error = FT_Init_FreeType(&library);
 	if (error) {
+		/* TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated */
 		fprintf(stderr, _("%s: freetype error\n"), argv[0]);
 		exit(3);
 	}
@@ -859,6 +860,7 @@ int main(int argc, char **argv)
 
 	cr_status = cairo_surface_status(surface);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
+		/* TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated */
 		fprintf(stderr, _("%s: failed to create cairo surface: %s\n"),
 				argv[0], cairo_status_to_string(cr_status));
 		exit(1);

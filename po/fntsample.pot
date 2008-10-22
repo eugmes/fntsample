@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fntsample 2.8\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2008-10-22 15:53+0200\n"
+"POT-Creation-Date: 2008-10-22 16:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,32 +69,34 @@ msgstr ""
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr ""
 
-#: fntsample.c:835
+#. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
+#: fntsample.c:836
 #, c-format
 msgid "%s: freetype error\n"
 msgstr ""
 
-#: fntsample.c:841
+#: fntsample.c:842
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr ""
 
-#: fntsample.c:850
+#: fntsample.c:851
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr ""
 
-#: fntsample.c:862
+#. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
+#: fntsample.c:864
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr ""
 
-#: fntsample.c:870
+#: fntsample.c:872
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
 msgstr ""
 
-#: fntsample.c:882
+#: fntsample.c:884
 #, c-format
 msgid "%s: failed to create scaled font: %s\n"
 msgstr ""
