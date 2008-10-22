@@ -838,7 +838,7 @@ int main(int argc, char **argv)
 
 	error = FT_New_Face(library, font_file_name, 0, &face);
 	if (error) {
-		fprintf(stderr, _("%s: failed to create new face\n"), argv[0]);
+		fprintf(stderr, _("%s: failed to create new font face\n"), argv[0]);
 		exit(4);
 	}
 
@@ -847,7 +847,7 @@ int main(int argc, char **argv)
 	if (other_font_file_name) {
 		error = FT_New_Face(library, other_font_file_name, 0, &other_face);
 		if (error) {
-			fprintf(stderr, _("%s: failed to create new face\n"), argv[0]);
+			fprintf(stderr, _("%s: failed to create new font face\n"), argv[0]);
 			exit(4);
 		}
 	}
@@ -877,6 +877,12 @@ int main(int argc, char **argv)
 	init_pango_fonts();
 	calculate_offsets(cr);
 	cr_font = create_default_font(face);
+	cr_status = cairo_scaled_font_status(cr_font);
+	if (cr_status != CAIRO_STATUS_SUCCESS) {
+		fprintf(stderr, _("%s: failed to create scaled font: %s\n"),
+				argv[0], cairo_status_to_string(cr_status));
+		exit(1);
+	}
 
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	draw_glyphs(cr, cr_font, face, fontname, other_face);
