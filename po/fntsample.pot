@@ -1,0 +1,110 @@
+# SOME DESCRIPTIVE TITLE.
+# This file is put in the public domain.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: fntsample 2.8\n"
+"Report-Msgid-Bugs-To: eugen@debian.org\n"
+"POT-Creation-Date: 2008-10-22 15:53+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fntsample.c:302 fntsample.c:320
+#, c-format
+msgid "Font file name should be given only once!\n"
+msgstr ""
+
+#: fntsample.c:309
+#, c-format
+msgid "Output file name should be given only once!\n"
+msgstr ""
+
+#: fntsample.c:664
+#, c-format
+msgid ""
+"Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
+"       %s -h\n"
+"\n"
+msgstr ""
+
+#: fntsample.c:666
+#, c-format
+msgid ""
+"Options:\n"
+"  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
+"  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
+"  --help,              -h              Show this information message and "
+"exit\n"
+"  --other-font-file,   -d OTHER-FONT   Compare FONT-FILE with OTHER-FONT and "
+"highlight added glyphs\n"
+"  --postscript-output, -s              Use PostScript format for output "
+"instead of PDF\n"
+"  --print-outline,     -l              Print document outlines data to "
+"standard output\n"
+"  --include-range,     -i RANGE        Show characters in RANGE\n"
+"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
+"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
+msgstr ""
+
+#: fntsample.c:676
+#, c-format
+msgid ""
+"\n"
+"Supported styles (and default values):\n"
+msgstr ""
+
+#: fntsample.c:792
+#, c-format
+msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
+msgstr ""
+
+#: fntsample.c:797
+#, c-format
+msgid "The font has strange metrics: ascent + descent = %g\n"
+msgstr ""
+
+#: fntsample.c:835
+#, c-format
+msgid "%s: freetype error\n"
+msgstr ""
+
+#: fntsample.c:841
+#, c-format
+msgid "%s: failed to open font file %s\n"
+msgstr ""
+
+#: fntsample.c:850
+#, c-format
+msgid "%s: failed to create new font face\n"
+msgstr ""
+
+#: fntsample.c:862
+#, c-format
+msgid "%s: failed to create cairo surface: %s\n"
+msgstr ""
+
+#: fntsample.c:870
+#, c-format
+msgid "%s: cairo_create failed: %s\n"
+msgstr ""
+
+#: fntsample.c:882
+#, c-format
+msgid "%s: failed to create scaled font: %s\n"
+msgstr ""
+
+#: pdfoutline.pl:41
+#, perl-format
+msgid "Usage: %s input.pdf outline.txt out.pdf\n"
+msgstr ""
+
+#: pdfoutline.pl:102
+#, perl-brace-format
+msgid "Cannot open outline file '{outlinefile}'"
+msgstr ""
