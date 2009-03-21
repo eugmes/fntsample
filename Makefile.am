@@ -12,7 +12,7 @@ fntsample_LDADD = @LIBINTL@ $(cairo_LIBS) $(fontconfig_LIBS) $(freetype2_LIBS) $
 
 nodist_man_MANS = fntsample.1 pdfoutline.1
 
-EXTRA_DIST = config.rpath genblocks.awk pdfoutline.pl
+EXTRA_DIST = config.rpath genblocks.awk pdfoutline.pl po/Changes
 CLEANFILES = unicode_blocks.c $(bin_SCRIPTS)
 
 unicode_blocks.c: genblocks.awk
