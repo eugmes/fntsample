@@ -1,0 +1,32 @@
+# programs
+/fntsample
+/pdfoutline
+
+# object files
+*.o
+
+# compiled message catalogs
+*.gmo
+
+# generated manpages
+/fntsample.1
+/pdfoutline.1
+
+# generated source
+/unicode_blocks.c
+
+# autotools and gettext stuff
+.deps
+.dirstamp
+Makefile
+Makefile.in
+aclocal.m4
+config.*
+configure
+depcomp
+install-sh
+missing
+stamp-*
+autom4te.cache
+/POTFILES
+/po/remove-potcdate.sed
