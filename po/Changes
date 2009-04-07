@@ -3,3 +3,4 @@ Changes made in Makefile.in.in:
   * build *.gmo files in the "all" target
   * exclude $(GMOFILES) from DISTFILES
   * remove stamp-po in the "clean" target and don't distribute it
+  * remove stamp-po from all-yes target
