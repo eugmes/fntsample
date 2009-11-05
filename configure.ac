@@ -2,8 +2,9 @@ AC_INIT([fntsample], [3.0], [eugen@debian.org])
 AC_CONFIG_SRCDIR([fntsample.c])
 AC_CONFIG_HEADER([config.h])
 
-AM_INIT_AUTOMAKE([foreign 1.7])
+AM_INIT_AUTOMAKE([foreign 1.11])
 AM_MAINTAINER_MODE
+AM_SILENT_RULES([yes])
 
 AM_GNU_GETTEXT([external])
 

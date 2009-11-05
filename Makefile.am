@@ -15,10 +15,19 @@ nodist_man_MANS = fntsample.1 pdfoutline.1
 EXTRA_DIST = config.rpath genblocks.awk pdfoutline.pl po/Changes
 CLEANFILES = unicode_blocks.c $(bin_SCRIPTS)
 
+AWK_V = $(AWK_V_$(V))
+AWK_V_ = $(AWK_V_$(AM_DEFAULT_VERBOSITY))
+AWK_V_0 = @echo "  AWK   " $@;
+
+SED_V = $(SED_V_$(V))
+SED_V_ = $(SED_V_$(AM_DEFAULT_VERBOSITY))
+SED_V_0 = @echo "  SED   " $@;
+
+
 unicode_blocks.c: genblocks.awk
-	$(AWK) -f $(srcdir)/genblocks.awk $(UNICODE_BLOCKS) > unicode_blocks.c
+	$(AWK_V)$(AWK) -f $(srcdir)/genblocks.awk $(UNICODE_BLOCKS) > unicode_blocks.c
 
 pdfoutline: pdfoutline.pl Makefile
-	$(SED) -e 's|##PACKAGE##|$(PACKAGE)|' -e 's|##LOCALEDIR##|$(localedir)|' $< > $@
+	$(SED_V)$(SED) -e 's|##PACKAGE##|$(PACKAGE)|' -e 's|##LOCALEDIR##|$(localedir)|' $< > $@
 
 SUBDIRS = po
