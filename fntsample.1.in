@@ -33,6 +33,11 @@ supports the following options.
 Make samples of 
 .I FONT-FILE
 .TP
+.BI "\-\-font\-index, \-n " IDX
+Font index for \fIFONT-FILE\fP specified using \fB\-\-font\-file\fP option.
+Useful for files that contain multiple fonts, like TrueType Collections (.ttc).
+By default font with index 0 is used.
+.TP
 .BI "\-\-output\-file, \-o " OUTPUT-FILE
 Write output to 
 .I OUTPUT-FILE
@@ -45,6 +50,9 @@ with
 Glyphs added to
 .I FONT-FILE
 will be highlighted.
+.TP
+.BI "\-\-other\-index, \-m " IDX
+Font index for \fIOTHER-FONT\fP specified using \fB\-\-other\-font\-file\fP option.
 .TP
 .BI "\-\-postscript\-output, \-s"
 Use PostScript format for output instead of PDF.
