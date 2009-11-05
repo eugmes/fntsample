@@ -1,4 +1,4 @@
-/* Copyright © 2007-2008 Євгеній Мещеряков <eugen@debian.org>
+/* Copyright © 2007-2009 Євгеній Мещеряков <eugen@debian.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,8 @@ static struct option longopts[] = {
   {"include-range", 1, 0, 'i'},
   {"exclude-range", 1, 0, 'x'},
   {"style", 1, 0, 't'},
+  {"font-index", 1, 0, 'n'},
+  {"other-index", 1, 0, 'm'},
   {0, 0, 0, 0}
 };
 
@@ -77,6 +79,8 @@ static bool postscript_output;
 static bool print_outline;
 static struct range *ranges;
 static struct range *last_range;
+static int font_index;
+static int other_index;
 
 struct fntsample_style {
 	const char *const name;
@@ -291,7 +295,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sli:x:t:", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sli:x:t:n:m:", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -341,6 +345,12 @@ static void parse_options(int argc, char * const argv[])
 				exit(1);
 			}
 			break;
+		case 'n':
+			font_index = atoi(optarg);
+			break;
+		case 'm':
+			other_index = atoi(optarg);
+			break;
 		case '?':
 		default:
 			usage(argv[0]);
@@ -351,6 +361,10 @@ static void parse_options(int argc, char * const argv[])
 	if (!font_file_name || !output_file_name) {
 		usage(argv[0]);
 		exit(1);
+	}
+	if (font_index < 0 || other_index < 0) {
+		fprintf(stderr, _("Font index should be non-negative!\n"));
+		exit(0);
 	}
 }
 
@@ -665,9 +679,11 @@ static void usage(const char *cmd)
 			"       %s -h\n\n") , cmd, cmd);
 	fprintf(stderr, _("Options:\n"
 			"  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
+			"  --font-index,        -n IDX          Font index in FONT-FILE\n"
 			"  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
 			"  --help,              -h              Show this information message and exit\n"
 			"  --other-font-file,   -d OTHER-FONT   Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
+			"  --other-index,       -m IDX          Font index in OTHER-FONT\n"
 			"  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
 			"  --print-outline,     -l              Print document outlines data to standard output\n"
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
@@ -837,7 +853,7 @@ int main(int argc, char **argv)
 		exit(3);
 	}
 
-	error = FT_New_Face(library, font_file_name, 0, &face);
+	error = FT_New_Face(library, font_file_name, font_index, &face);
 	if (error) {
 		fprintf(stderr, _("%s: failed to open font file %s\n"), argv[0], font_file_name);
 		exit(4);
@@ -846,7 +862,7 @@ int main(int argc, char **argv)
 	fontname = get_font_name(face);
 
 	if (other_font_file_name) {
-		error = FT_New_Face(library, other_font_file_name, 0, &other_face);
+		error = FT_New_Face(library, other_font_file_name, other_index, &other_face);
 		if (error) {
 			fprintf(stderr, _("%s: failed to create new font face\n"), argv[0]);
 			exit(4);
