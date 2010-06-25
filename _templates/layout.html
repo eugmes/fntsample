@@ -1,0 +1,12 @@
+{% extends "!layout.html" %}
+
+{% if pagename == 'index' %}
+{% set metatags = '<meta name="google-site-verification" content="EPd79xcxGmsBvFvMGXAefjkKQPgqM3jSG7qzrcIptjI" />' %}
+{% endif %}
+
+{% block footer %}
+<div class="footer">
+   <a href="http://sourceforge.net/projects/fntsample"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=187131&amp;type=10" width="80" height="15" alt="Get fntsample at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+</div>
+{{ super() }}
+{% endblock %}
