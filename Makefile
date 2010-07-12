@@ -87,3 +87,7 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+push_to_sf: html
+	@if [ -z "$(SF_USER)" ]; then echo "Define SF_USER!" >&2; exit 1; fi
+	rsync -navP -e ssh --delete --exclude .buildinfo --exclude objects.inv _build/html/ $(SF_USER)@frs.sourceforge.net:userweb/htdocs/
