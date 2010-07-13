@@ -31,7 +31,7 @@ supports the following options.
 .TP
 .BI "\-\-font\-file, \-f " FONT-FILE
 Make samples of 
-.I FONT-FILE
+.IR FONT-FILE .
 .TP
 .BI "\-\-font\-index, \-n " IDX
 Font index for \fIFONT-FILE\fP specified using \fB\-\-font\-file\fP option.
@@ -40,7 +40,7 @@ By default font with index 0 is used.
 .TP
 .BI "\-\-output\-file, \-o " OUTPUT-FILE
 Write output to 
-.I OUTPUT-FILE
+.IR OUTPUT-FILE .
 .TP
 .BI "\-\-other\-font\-file, \-d " OTHER-FONT
 Compare
@@ -72,7 +72,7 @@ Set \fISTYLE\fP to value \fIVAL\fP.
 Run \fBfntsample\fP with option \fB\-\-help\fP to see list of styles and default values.
 .TP
 .BI "\-\-help, \-h"
-Display help text and exit
+Display help text and exit.
 .P
 Parameter \fIRANGE\fP for \fB\-i\fP and \fB\-x\fP can be given as one integer or a pair of
 integers delimited by minus sign (\-).
