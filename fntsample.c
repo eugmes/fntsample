@@ -20,6 +20,7 @@
 #include <cairo.h>
 #include <cairo-pdf.h>
 #include <cairo-ps.h>
+#include <cairo-svg.h>
 #include <cairo-ft.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +57,7 @@ static struct option longopts[] = {
   {"help", 0, 0, 'h'},
   {"other-font-file", 1, 0, 'd'},
   {"postscript-output", 0, 0, 's'},
+  {"svg", 0, 0, 'g'},
   {"print-outline", 0, 0, 'l'},
   {"include-range", 1, 0, 'i'},
   {"exclude-range", 1, 0, 'x'},
@@ -76,6 +78,7 @@ static const char *font_file_name;
 static const char *other_font_file_name;
 static const char *output_file_name;
 static bool postscript_output;
+static bool svg_output;
 static bool print_outline;
 static struct range *ranges;
 static struct range *last_range;
@@ -295,7 +298,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sli:x:t:n:m:", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sgli:x:t:n:m:", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -328,6 +331,9 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 's':
 			postscript_output = true;
+			break;
+		case 'g':
+			svg_output = true;
 			break;
 		case 'l':
 			print_outline = true;
@@ -364,7 +370,11 @@ static void parse_options(int argc, char * const argv[])
 	}
 	if (font_index < 0 || other_index < 0) {
 		fprintf(stderr, _("Font index should be non-negative!\n"));
-		exit(0);
+		exit(1);
+	}
+	if (postscript_output && svg_output) {
+		fprintf(stderr, _("-s and -g cannot be used together!\n"));
+		exit(1);
 	}
 }
 
@@ -685,6 +695,7 @@ static void usage(const char *cmd)
 			"  --other-font-file,   -d OTHER-FONT   Compare FONT-FILE with OTHER-FONT and highlight added glyphs\n"
 			"  --other-index,       -m IDX          Font index in OTHER-FONT\n"
 			"  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
+			"  --svg,               -g              Use SVG format for output\n"
 			"  --print-outline,     -l              Print document outlines data to standard output\n"
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
 			"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
@@ -871,6 +882,8 @@ int main(int argc, char **argv)
 
 	if (postscript_output)
 		surface = cairo_ps_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
+	else if (svg_output)
+		surface = cairo_svg_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
 	else
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 
