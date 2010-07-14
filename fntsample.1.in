@@ -57,6 +57,11 @@ Font index for \fIOTHER-FONT\fP specified using \fB\-\-other\-font\-file\fP opti
 .BI "\-\-postscript\-output, \-s"
 Use PostScript format for output instead of PDF.
 .TP
+.BI "\-\-svg, \-g"
+Use SVG format for output.
+The generated document contains one page.
+Use range selection options to specify which.
+.TP
 .BI "\-\-print\-outline, \-l"
 Print document outlines data to standard output.
 This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
