@@ -1,3 +1,6 @@
+Changes in version 3.2:
+	* Add support for SVG output
+
 Changes in version 3.1:
 	* Add support for files that contain multiple fonts, like
 	  TrueType Collections (.ttc)
