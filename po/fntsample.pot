@@ -5,32 +5,38 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fntsample 3.0\n"
+"Project-Id-Version: fntsample 3.2\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2009-11-05 17:31+0100\n"
+"POT-Creation-Date: 2010-08-05 14:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: fntsample.c:306 fntsample.c:324
+#: fntsample.c:309 fntsample.c:327
 #, c-format
 msgid "Font file name should be given only once!\n"
 msgstr ""
 
-#: fntsample.c:313
+#: fntsample.c:316
 #, c-format
 msgid "Output file name should be given only once!\n"
 msgstr ""
 
-#: fntsample.c:366
+#: fntsample.c:372
 #, c-format
 msgid "Font index should be non-negative!\n"
 msgstr ""
 
-#: fntsample.c:678
+#: fntsample.c:376
+#, c-format
+msgid "-s and -g cannot be used together!\n"
+msgstr ""
+
+#: fntsample.c:688
 #, c-format
 msgid ""
 "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
@@ -38,7 +44,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: fntsample.c:680
+#: fntsample.c:690
 #, c-format
 msgid ""
 "Options:\n"
@@ -52,6 +58,7 @@ msgid ""
 "  --other-index,       -m IDX          Font index in OTHER-FONT\n"
 "  --postscript-output, -s              Use PostScript format for output "
 "instead of PDF\n"
+"  --svg,               -g              Use SVG format for output\n"
 "  --print-outline,     -l              Print document outlines data to "
 "standard output\n"
 "  --include-range,     -i RANGE        Show characters in RANGE\n"
@@ -59,51 +66,51 @@ msgid ""
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
 msgstr ""
 
-#: fntsample.c:692
+#: fntsample.c:703
 #, c-format
 msgid ""
 "\n"
 "Supported styles (and default values):\n"
 msgstr ""
 
-#: fntsample.c:808
+#: fntsample.c:819
 #, c-format
 msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
 msgstr ""
 
-#: fntsample.c:813
+#: fntsample.c:824
 #, c-format
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr ""
 
 #. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
-#: fntsample.c:852
+#: fntsample.c:863
 #, c-format
 msgid "%s: freetype error\n"
 msgstr ""
 
-#: fntsample.c:858
+#: fntsample.c:869
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr ""
 
-#: fntsample.c:867
+#: fntsample.c:878
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr ""
 
 #. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
-#: fntsample.c:880
+#: fntsample.c:893
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr ""
 
-#: fntsample.c:888
+#: fntsample.c:901
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
 msgstr ""
 
-#: fntsample.c:900
+#: fntsample.c:913
 #, c-format
 msgid "%s: failed to create scaled font: %s\n"
 msgstr ""
