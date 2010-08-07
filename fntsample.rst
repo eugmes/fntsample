@@ -49,6 +49,12 @@ Options
 
     Use PostScript format for output instead of PDF.
 
+.. cmdoption:: --svg, -g
+
+    Use SVG format for output.
+    The generated document contains one page.
+    Use range selection options to specify which.
+
 .. cmdoption:: --print-outline, -l
 
     Print document outlines data to standard output.
