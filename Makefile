@@ -90,4 +90,4 @@ doctest:
 
 push_to_sf: html
 	@if [ -z "$(SF_USER)" ]; then echo "Define SF_USER!" >&2; exit 1; fi
-	rsync -navP -e ssh --delete --exclude .buildinfo --exclude objects.inv _build/html/ $(SF_USER),fntsample@web.sourceforge.net:htdocs/
+	rsync -avP -e ssh --delete --exclude .buildinfo --exclude objects.inv _build/html/ $(SF_USER),fntsample@web.sourceforge.net:htdocs/
