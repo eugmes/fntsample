@@ -13,7 +13,7 @@ Features
 * Support for various font formats using `FreeType <http://www.freetype.org/>`_ library,
   including TrueType, OpenType, and Type1.
 
-* Creating samples in PDF and PostScript format.
+* Creating samples in PDF, PostScript, and SVG formats.
 
 * Adding outlines with Unicode block names for PDF samples.
 
