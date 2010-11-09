@@ -86,6 +86,18 @@ One integer of a pair can be missing (-N can be used to specify all characters w
 codes less or equal to N, and N- for all characters with codes greater or equal to N).
 Multiple :option:`--include-range` and :option:`--exclude-range` options can be used.
 
+Colors
+------
+
+Glyph cells can have one of several background colors.
+Meaning of those colors is following:
+
+* white --- normal glyph present in the font, this includes space glyphs that are usually invisible;
+* gray --- this glyph is defined in Unicode but not present in the font;
+* blue --- this is a control character;
+* black --- this glyph is not defined in Unicode;
+* yellow --- this is a new glyph (only when used with :option:`--other-font`).
+
 Examples
 --------
 
