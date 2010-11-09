@@ -85,6 +85,24 @@ Integers can be specified in decimal, hexadecimal (0x...) or octal (0...) format
 One integer of a pair can be missing (\-N can be used to specify all characters with codes less
 or equal to N, and N\- for all characters with codes greather or equal to N).
 Multiple \fB\-i\fP and \fB\-x\fP options can be used.
+.SH COLORS
+Glyph cells can have one of several background colors.
+Meaning of those colors is following:
+.TP
+.B white
+normal glyph present in the font, this includes space glyphs that are usually invisible;
+.TP
+.B gray
+this glyph is defined in Unicode but not present in the font;
+.TP
+.B blue
+this is a control character;
+.TP
+.B black
+this glyph is not defined in Unicode;
+.TP
+.B yellow
+this is a new glyph (only when used with \fB\-d\fP).
 .SH EXAMPLES
 .RI "Make PDF samples for " font.ttf " and write them to file " samples.pdf :
 .SAMPLE
