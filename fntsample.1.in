@@ -76,6 +76,10 @@ Do not show characters in \fIRANGE\fP.
 Set \fISTYLE\fP to value \fIVAL\fP.
 Run \fBfntsample\fP with option \fB\-\-help\fP to see list of styles and default values.
 .TP
+.BI "\-\-no\-embed, \-e"
+Draw the outlines of the glyphs instead of embedding them in the PDF file.
+This can be used when embedding the font is not desired or not allowed.
+.TP
 .BI "\-\-help, \-h"
 Display help text and exit.
 .P

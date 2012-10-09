@@ -64,6 +64,7 @@ static struct option longopts[] = {
   {"style", 1, 0, 't'},
   {"font-index", 1, 0, 'n'},
   {"other-index", 1, 0, 'm'},
+  {"no-embed", 0, 0, 'e'},
   {0, 0, 0, 0}
 };
 
@@ -80,6 +81,7 @@ static const char *output_file_name;
 static bool postscript_output;
 static bool svg_output;
 static bool print_outline;
+static bool no_embed;
 static struct range *ranges;
 static struct range *last_range;
 static int font_index;
@@ -298,7 +300,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sgli:x:t:n:m:", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sgli:x:t:n:m:e", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -356,6 +358,9 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 'm':
 			other_index = atoi(optarg);
+			break;
+		case 'e':
+			no_embed = true;
 			break;
 		case '?':
 		default:
@@ -633,7 +638,14 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		}
 
 		/* Show previously positioned glyphs */
-		cairo_show_glyphs(cr, glyphs, nglyphs);
+		if (no_embed) {
+			cairo_save(cr);
+			cairo_glyph_path (cr, glyphs, nglyphs);
+			cairo_fill(cr);
+			cairo_restore(cr);
+		} else {
+			cairo_show_glyphs(cr, glyphs, nglyphs);
+		}
 
 		for (i = 0; i < tbl_end - tbl_start; i++)
 			if (filled_cells[i])
@@ -697,6 +709,7 @@ static void usage(const char *cmd)
 			"  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
 			"  --svg,               -g              Use SVG format for output\n"
 			"  --print-outline,     -l              Print document outlines data to standard output\n"
+			"  --no-embed,          -e              Don't embed the font in the output file, draw the glyphs instead\n"
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
 			"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
 			"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"));
