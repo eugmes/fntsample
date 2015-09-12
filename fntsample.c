@@ -16,6 +16,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_SFNT_NAMES_H
+#include FT_TRUETYPE_IDS_H
 #include FT_TYPE1_TABLES_H
 #include <cairo.h>
 #include <cairo-pdf.h>
@@ -34,6 +35,7 @@
 #include <math.h>
 #include <libintl.h>
 #include <locale.h>
+#include <iconv.h>
 
 #include "unicode_blocks.h"
 #include "config.h"
@@ -726,21 +728,33 @@ static void usage(const char *cmd)
 static const char *get_font_name(FT_Face face)
 {
 	FT_Error error;
-	FT_SfntName face_name;
-	char *fontname;
+	char *fontname = NULL;
 
 	/* try SFNT format */
-	error = FT_Get_Sfnt_Name(face, 4 /* full font name */, &face_name);
-	if (!error) {
-		fontname = malloc(face_name.string_len + 1);
-		if (!fontname) {
-			perror("malloc");
-			exit(1);
+	unsigned num_names = FT_Get_Sfnt_Name_Count(face);
+	iconv_t u16to8 = iconv_open("UTF-8", "UTF-16BE");
+	for (unsigned i = 0; i < num_names; i++) {
+		FT_SfntName name;
+
+		error = FT_Get_Sfnt_Name(face, i, &name);
+		if (error)
+			continue;
+
+		if (name.name_id == TT_NAME_ID_FULL_NAME &&
+		    name.platform_id == TT_PLATFORM_MICROSOFT &&
+		    name.encoding_id == TT_MS_ID_UNICODE_CS) {
+			fontname = malloc(name.string_len + 1);
+			char *bufptr = fontname;
+			size_t inbytes = name.string_len;
+			size_t outbytes = name.string_len + 1;
+			if (iconv(u16to8, (char**)&name.string, &inbytes, &bufptr, &outbytes) == (size_t)-1)
+				continue;
+			*bufptr = '\0';
 		}
-		memcpy(fontname, face_name.string, face_name.string_len);
-		fontname[face_name.string_len] = '\0';
-		return fontname;
 	}
+	iconv_close(u16to8);
+	if (fontname)
+		return fontname;
 
 	/* try Type1 format */
 	PS_FontInfoRec fontinfo;
