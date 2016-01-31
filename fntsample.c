@@ -743,10 +743,10 @@ static const char *get_font_name(FT_Face face)
 		if (name.name_id == TT_NAME_ID_FULL_NAME &&
 		    name.platform_id == TT_PLATFORM_MICROSOFT &&
 		    name.encoding_id == TT_MS_ID_UNICODE_CS) {
-			fontname = malloc(name.string_len + 1);
+			fontname = malloc(name.string_len * 2 + 1);
 			char *bufptr = fontname;
 			size_t inbytes = name.string_len;
-			size_t outbytes = name.string_len + 1;
+			size_t outbytes = name.string_len * 2;
 			if (iconv(u16to8, (char**)&name.string, &inbytes, &bufptr, &outbytes) == (size_t)-1)
 				continue;
 			*bufptr = '\0';
