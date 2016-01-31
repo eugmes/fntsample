@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fntsample 2.8\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2010-08-05 14:08+0200\n"
+"POT-Creation-Date: 2016-01-31 23:41+0100\n"
 "PO-Revision-Date: 2010-08-05 14:10+0200\n"
 "Last-Translator: Eugeniy Meshcheryakov <eugen@debian.org>\n"
 "Language-Team: Ukrainian <>\n"
@@ -15,30 +15,30 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Lokalize 1.0\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: fntsample.c:309 fntsample.c:327
+#: fntsample.c:313 fntsample.c:331
 #, c-format
 msgid "Font file name should be given only once!\n"
 msgstr "Назву файлу шрифтів потрібно вказувати тільки один раз!\n"
 
-#: fntsample.c:316
+#: fntsample.c:320
 #, c-format
 msgid "Output file name should be given only once!\n"
 msgstr "Назву файлу результату потрібно вказувати тільки один раз!\n"
 
-#: fntsample.c:372
+#: fntsample.c:379
 #, c-format
 msgid "Font index should be non-negative!\n"
 msgstr "Індекс шрифту повинен бути ненегативним!\n"
 
-#: fntsample.c:376
+#: fntsample.c:383
 #, c-format
 msgid "-s and -g cannot be used together!\n"
 msgstr ""
 
-#: fntsample.c:688
+#: fntsample.c:702
 #, c-format
 msgid ""
 "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
@@ -49,7 +49,7 @@ msgstr ""
 "              %s -h\n"
 "\n"
 
-#: fntsample.c:690
+#: fntsample.c:704
 #, c-format
 msgid ""
 "Options:\n"
@@ -66,6 +66,8 @@ msgid ""
 "  --svg,               -g              Use SVG format for output\n"
 "  --print-outline,     -l              Print document outlines data to "
 "standard output\n"
+"  --no-embed,          -e              Don't embed the font in the output "
+"file, draw the glyphs instead\n"
 "  --include-range,     -i RANGE        Show characters in RANGE\n"
 "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
@@ -84,11 +86,13 @@ msgstr ""
 "  --svg,               -g                 Використовувати формат SVG\n"
 "  --print-outline,     -l                 Друкувати зміст документа на "
 "стандартний вивід\n"
+"  --no-embed,          -e                 Не вбудовувати шрифти, натомість "
+"малювати символи\n"
 "  --include-range,     -i ПРОМІЖОК        Показати символи з ПРОМІЖКУ\n"
 "  --exclude-range,     -x ПРОМІЖОК        Не показувати символи з ПРОМІЖКУ\n"
 "  --style,             -t \"СТИЛЬ: ЗНАЧ\"   Встановити ЗНАЧЕННЯ СТИЛЯ\n"
 
-#: fntsample.c:703
+#: fntsample.c:718
 #, c-format
 msgid ""
 "\n"
@@ -97,45 +101,45 @@ msgstr ""
 "\n"
 "Підтримувані стилі (та значення за замовчанням):\n"
 
-#: fntsample.c:819
+#: fntsample.c:846
 #, c-format
 msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
 msgstr ""
 "Недостатньо місця для відображення символів. Зробіть шрифт комірок меншим.\n"
 
-#: fntsample.c:824
+#: fntsample.c:851
 #, c-format
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr "Шрифт має дивні метрики: ascent + descent = %g\n"
 
 #. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
-#: fntsample.c:863
+#: fntsample.c:890
 #, c-format
 msgid "%s: freetype error\n"
 msgstr "%s: помилка freetype\n"
 
-#: fntsample.c:869
+#: fntsample.c:896
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr "%s: неможливо відкрити файл шрифту %s\n"
 
-#: fntsample.c:878
+#: fntsample.c:905
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr "%s: неможливо створити новий шрифт\n"
 
 #. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
-#: fntsample.c:893
+#: fntsample.c:920
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr "%s: неможливо створити нову поверхню cairo: %s\n"
 
-#: fntsample.c:901
+#: fntsample.c:928
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
 msgstr "%s: помилка при виконанні cairo_create: %s\n"
 
-#: fntsample.c:913
+#: fntsample.c:940
 #, c-format
 msgid "%s: failed to create scaled font: %s\n"
 msgstr "%s: неможливо створити масштабований шрифт: %s\n"
@@ -149,4 +153,3 @@ msgstr "Використання: %s оригінальний.pdf зміст.txt
 #, perl-brace-format
 msgid "Cannot open outline file '{outlinefile}'"
 msgstr "Неможливо відкрити файл змісту '{outlinefile}'"
-
