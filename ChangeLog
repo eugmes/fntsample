@@ -1,3 +1,8 @@
+Changes in version 4.1:
+	* Detect iconv and add LIBICONV to LDADD
+	* Detect support for -Wl,--as-needed in configure
+	* Those changes fix compilation on OS X
+
 Changes in version 4.0:
 	* Add a --no-embed option
 	* Fix broken handling of font names
