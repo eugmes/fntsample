@@ -22,6 +22,8 @@ PKG_CHECK_MODULES([freetype2], [freetype2])
 PKG_CHECK_MODULES([glib], [glib-2.0])
 PKG_CHECK_MODULES([pangocairo], [pangocairo >= 1.16])
 
+AM_ICONV()
+
 AC_SUBST([UNICODE_BLOCKS])
 UNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
 
