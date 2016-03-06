@@ -1,4 +1,5 @@
 AC_INIT([fntsample], [4.0], [eugen@debian.org])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([fntsample.c])
 AC_CONFIG_HEADER([config.h])
 
@@ -11,6 +12,9 @@ AM_GNU_GETTEXT([external])
 AC_PROG_CC_C99
 AC_PROG_AWK
 AC_PROG_SED
+
+AC_SUBST([LD_AS_NEEDED])
+AX_CHECK_LINK_FLAG([-Wl,--as-needed],[LD_AS_NEEDED=-Wl,--as-needed])
 
 PKG_CHECK_MODULES([cairo], [cairo])
 PKG_CHECK_MODULES([fontconfig], [fontconfig])
