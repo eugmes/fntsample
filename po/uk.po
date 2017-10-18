@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fntsample 2.8\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2016-01-31 23:41+0100\n"
+"POT-Creation-Date: 2017-10-18 19:03+0200\n"
 "PO-Revision-Date: 2010-08-05 14:10+0200\n"
 "Last-Translator: Eugeniy Meshcheryakov <eugen@debian.org>\n"
 "Language-Team: Ukrainian <>\n"
@@ -18,27 +18,37 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: fntsample.c:313 fntsample.c:331
+#: fntsample.c:327 fntsample.c:345
 #, c-format
 msgid "Font file name should be given only once!\n"
 msgstr "Назву файлу шрифтів потрібно вказувати тільки один раз!\n"
 
-#: fntsample.c:320
+#: fntsample.c:334
 #, c-format
 msgid "Output file name should be given only once!\n"
 msgstr "Назву файлу результату потрібно вказувати тільки один раз!\n"
 
-#: fntsample.c:379
+#: fntsample.c:363
+#, c-format
+msgid "Cairo >= 1.15.4 is required for this option!\n"
+msgstr ""
+
+#: fntsample.c:393
+#, c-format
+msgid "Pango >= 1.37 is required for this option!\n"
+msgstr ""
+
+#: fntsample.c:409
 #, c-format
 msgid "Font index should be non-negative!\n"
 msgstr "Індекс шрифту повинен бути ненегативним!\n"
 
-#: fntsample.c:383
+#: fntsample.c:413
 #, c-format
 msgid "-s and -g cannot be used together!\n"
 msgstr ""
 
-#: fntsample.c:702
+#: fntsample.c:807
 #, c-format
 msgid ""
 "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
@@ -49,8 +59,8 @@ msgstr ""
 "              %s -h\n"
 "\n"
 
-#: fntsample.c:704
-#, c-format
+#: fntsample.c:809
+#, fuzzy, c-format
 msgid ""
 "Options:\n"
 "  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
@@ -66,8 +76,11 @@ msgid ""
 "  --svg,               -g              Use SVG format for output\n"
 "  --print-outline,     -l              Print document outlines data to "
 "standard output\n"
+"  --write-outline,     -w              Write document outlines (only in PDF "
+"output)\n"
 "  --no-embed,          -e              Don't embed the font in the output "
 "file, draw the glyphs instead\n"
+"  --use-pango          -p              Use Pango for drawing glyph cells\n"
 "  --include-range,     -i RANGE        Show characters in RANGE\n"
 "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
@@ -92,7 +105,7 @@ msgstr ""
 "  --exclude-range,     -x ПРОМІЖОК        Не показувати символи з ПРОМІЖКУ\n"
 "  --style,             -t \"СТИЛЬ: ЗНАЧ\"   Встановити ЗНАЧЕННЯ СТИЛЯ\n"
 
-#: fntsample.c:718
+#: fntsample.c:825
 #, c-format
 msgid ""
 "\n"
@@ -101,45 +114,45 @@ msgstr ""
 "\n"
 "Підтримувані стилі (та значення за замовчанням):\n"
 
-#: fntsample.c:846
+#: fntsample.c:953
 #, c-format
 msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
 msgstr ""
 "Недостатньо місця для відображення символів. Зробіть шрифт комірок меншим.\n"
 
-#: fntsample.c:851
+#: fntsample.c:958
 #, c-format
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr "Шрифт має дивні метрики: ascent + descent = %g\n"
 
 #. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
-#: fntsample.c:890
+#: fntsample.c:997
 #, c-format
 msgid "%s: freetype error\n"
 msgstr "%s: помилка freetype\n"
 
-#: fntsample.c:896
+#: fntsample.c:1003
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr "%s: неможливо відкрити файл шрифту %s\n"
 
-#: fntsample.c:905
+#: fntsample.c:1012
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr "%s: неможливо створити новий шрифт\n"
 
 #. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
-#: fntsample.c:920
+#: fntsample.c:1027
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr "%s: неможливо створити нову поверхню cairo: %s\n"
 
-#: fntsample.c:928
+#: fntsample.c:1035
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
 msgstr "%s: помилка при виконанні cairo_create: %s\n"
 
-#: fntsample.c:940
+#: fntsample.c:1047
 #, c-format
 msgid "%s: failed to create scaled font: %s\n"
 msgstr "%s: неможливо створити масштабований шрифт: %s\n"
