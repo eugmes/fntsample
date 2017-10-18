@@ -1,0 +1,25 @@
+sudo: false
+dist: trusty
+language: c
+
+compiler:
+- gcc
+- clang
+
+addons:
+  apt:
+    packages:
+    - gawk
+    - libcairo2-dev
+    - unicode-data
+    - libglib2.0-dev
+    - pkg-config
+    - libfreetype6-dev
+    - libpango1.0-dev
+    - gettext
+    - autotools-dev
+
+script:
+- autoreconf
+- ./configure
+- make
