@@ -20,6 +20,6 @@ addons:
     - autotools-dev
 
 script:
-- autoreconf
-- ./configure
+- autoreconf --install
+- ./configure --disable-silent-rules
 - make
