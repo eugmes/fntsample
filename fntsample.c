@@ -45,6 +45,10 @@
 #define CAN_DRAW_WITH_PANGO
 #endif
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1,15,4)
+#define CAN_USE_CAIRO_OUTLINES
+#endif
+
 #define _(str)	gettext(str)
 
 #define A4_WIDTH	(8.3*72)
@@ -66,6 +70,7 @@ static struct option longopts[] = {
   {"postscript-output", 0, 0, 's'},
   {"svg", 0, 0, 'g'},
   {"print-outline", 0, 0, 'l'},
+  {"write-outline", 0, 0, 'w'},
   {"include-range", 1, 0, 'i'},
   {"exclude-range", 1, 0, 'x'},
   {"style", 1, 0, 't'},
@@ -89,6 +94,7 @@ static const char *output_file_name;
 static bool postscript_output;
 static bool svg_output;
 static bool print_outline;
+static bool write_outline;
 static bool no_embed;
 static bool use_pango;
 static struct range *ranges;
@@ -310,7 +316,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sgli:x:t:n:m:ep", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -349,6 +355,14 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 'l':
 			print_outline = true;
+			break;
+		case 'w':
+#ifdef CAN_USE_CAIRO_OUTLINES
+			write_outline = true;
+#else
+			fprintf(stderr, _("Cairo >= 1.15.4 is required for this option!\n"));
+			exit(1);
+#endif
 			break;
 		case 'i':
 		case 'x':
@@ -425,12 +439,31 @@ static bool is_in_block(unsigned long charcode, const struct unicode_block *bloc
 }
 
 /*
- * Format and print outline information, if requested by the user.
+ * Format and print/write outline information, if requested by the user.
  */
-static void outline(int level, int page, const char *text)
+static void outline(cairo_surface_t *surface, int level, int page, const char *text)
 {
 	if (print_outline)
 		printf("%d %d %s\n", level, page, text);
+
+#ifdef CAN_USE_CAIRO_OUTLINES
+	if (cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF)
+		return;
+
+	if (write_outline) {
+		char *dest = NULL;
+		int len = 0;
+
+		len = snprintf(dest, 0, "page=%d", page);
+		dest = malloc(len + 1);
+		sprintf(dest, "page=%d", page);
+
+		cairo_pdf_surface_add_outline(surface, level, text, dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
+	}
+#else
+	(void)surface;
+#endif
+
 }
 
 /*
@@ -745,8 +778,9 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
 	FT_UInt idx;
 	const struct unicode_block *block;
 	int pageno = 1;
+	cairo_surface_t *surface = cairo_get_target(cr);
 
-	outline(0, pageno, fontname);
+	outline(surface, 0, pageno, fontname);
 
 	charcode = get_first_char(ft_face, &idx);
 
@@ -754,7 +788,7 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
 		block = get_unicode_block(charcode);
 		if (block) {
 			int npages;
-			outline(1, pageno, block->name);
+			outline(surface, 1, pageno, block->name);
 			npages = draw_unicode_block(cr, font, ft_face, fontname,
 					&charcode, block, ft_other_face);
 			pageno += npages;
@@ -782,6 +816,7 @@ static void usage(const char *cmd)
 			"  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
 			"  --svg,               -g              Use SVG format for output\n"
 			"  --print-outline,     -l              Print document outlines data to standard output\n"
+			"  --write-outline,     -w              Write document outlines (only in PDF output)\n"
 			"  --no-embed,          -e              Don't embed the font in the output file, draw the glyphs instead\n"
 			"  --use-pango          -p              Use Pango for drawing glyph cells\n"
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
