@@ -525,7 +525,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	unsigned int i;
 	double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
 	double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
-	char buf[9];
+	char buf[17];
 	PangoLayout *layout;
 	PangoRectangle r;
 
