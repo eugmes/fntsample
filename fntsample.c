@@ -32,6 +32,7 @@
 #include <getopt.h>
 #include <stdint.h>
 #include <pango/pangocairo.h>
+#include <pango/pangofc-fontmap.h>
 #include <math.h>
 #include <libintl.h>
 #include <locale.h>
@@ -39,6 +40,14 @@
 
 #include "unicode_blocks.h"
 #include "config.h"
+
+#if PANGO_VERSION_CHECK(1,37,0)
+#define CAN_DRAW_WITH_PANGO
+#endif
+
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1,15,4)
+#define CAN_USE_CAIRO_OUTLINES
+#endif
 
 #define _(str)	gettext(str)
 
@@ -61,12 +70,14 @@ static struct option longopts[] = {
   {"postscript-output", 0, 0, 's'},
   {"svg", 0, 0, 'g'},
   {"print-outline", 0, 0, 'l'},
+  {"write-outline", 0, 0, 'w'},
   {"include-range", 1, 0, 'i'},
   {"exclude-range", 1, 0, 'x'},
   {"style", 1, 0, 't'},
   {"font-index", 1, 0, 'n'},
   {"other-index", 1, 0, 'm'},
   {"no-embed", 0, 0, 'e'},
+  {"use-pango", 0, 0, 'p'},
   {0, 0, 0, 0}
 };
 
@@ -83,7 +94,9 @@ static const char *output_file_name;
 static bool postscript_output;
 static bool svg_output;
 static bool print_outline;
+static bool write_outline;
 static bool no_embed;
+static bool use_pango;
 static struct range *ranges;
 static struct range *last_range;
 static int font_index;
@@ -111,6 +124,7 @@ static PangoFontDescription *cell_numbers_font;
 static double cell_label_offset;
 static double cell_glyph_bot_offset;
 static double glyph_baseline_offset;
+static double font_scale;
 
 static void usage(const char *);
 
@@ -302,7 +316,7 @@ static void parse_options(int argc, char * const argv[])
 	for (;;) {
 		int c;
 
-		c = getopt_long(argc, argv, "f:o:hd:sgli:x:t:n:m:e", longopts, NULL);
+		c = getopt_long(argc, argv, "f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
 
 		if (c == -1)
 			break;
@@ -342,6 +356,14 @@ static void parse_options(int argc, char * const argv[])
 		case 'l':
 			print_outline = true;
 			break;
+		case 'w':
+#ifdef CAN_USE_CAIRO_OUTLINES
+			write_outline = true;
+#else
+			fprintf(stderr, _("Cairo >= 1.15.4 is required for this option!\n"));
+			exit(1);
+#endif
+			break;
 		case 'i':
 		case 'x':
 			if (add_range(optarg, c == 'i')) {
@@ -363,6 +385,14 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 'e':
 			no_embed = true;
+			break;
+		case 'p':
+#ifdef CAN_DRAW_WITH_PANGO
+			use_pango = true;
+#else
+			fprintf(stderr, _("Pango >= 1.37 is required for this option!\n"));
+			exit(1);
+#endif
 			break;
 		case '?':
 		default:
@@ -409,12 +439,31 @@ static bool is_in_block(unsigned long charcode, const struct unicode_block *bloc
 }
 
 /*
- * Format and print outline information, if requested by the user.
+ * Format and print/write outline information, if requested by the user.
  */
-static void outline(int level, int page, const char *text)
+static void outline(cairo_surface_t *surface, int level, int page, const char *text)
 {
 	if (print_outline)
 		printf("%d %d %s\n", level, page, text);
+
+#ifdef CAN_USE_CAIRO_OUTLINES
+	if (cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF)
+		return;
+
+	if (write_outline) {
+		char *dest = NULL;
+		int len = 0;
+
+		len = snprintf(dest, 0, "page=%d", page);
+		dest = malloc(len + 1);
+		sprintf(dest, "page=%d", page);
+
+		cairo_pdf_surface_add_outline(surface, level, text, dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
+	}
+#else
+	(void)surface;
+#endif
+
 }
 
 /*
@@ -476,7 +525,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 	unsigned int i;
 	double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
 	double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
-	char buf[9];
+	char buf[17];
 	PangoLayout *layout;
 	PangoRectangle r;
 
@@ -580,6 +629,29 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 	unsigned long prev_cell;
 	int npages = 0;
 
+#ifdef CAN_DRAW_WITH_PANGO
+	FcConfig *fc_config = NULL;
+	PangoFontMap *fontmap = NULL;
+	PangoContext *context = NULL;
+	PangoLayout *layout = NULL;
+	PangoFontDescription *font_desc = NULL;
+
+	if (use_pango) {
+		fc_config = FcConfigCreate();
+		FcConfigAppFontAddFile(fc_config, (FcChar8 *) font_file_name);
+		fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
+		pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
+		context = pango_font_map_create_context(fontmap);
+		pango_cairo_update_context (cr, context);
+
+		font_desc = pango_font_description_new();
+		layout = pango_layout_new (context);
+		pango_layout_set_font_description(layout, font_desc);
+		pango_layout_set_width(layout, cell_width * PANGO_SCALE);
+		pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+	}
+#endif
+
 	idx = FT_Get_Char_Index(ft_face, *charcode);
 
 	do {
@@ -602,7 +674,9 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 
 		memset(filled_cells, '\0', sizeof(filled_cells));
 
-		cairo_set_scaled_font(cr, font);
+		if (!use_pango)
+			cairo_set_scaled_font(cr, font);
+
 		/*
 		 * Fill empty cells and calculate coordinates of the glyphs.
 		 * Also highlight cells if needed.
@@ -623,8 +697,26 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 
 			/* For now just position glyphs. They will be shown later,
 			 * to make output more efficient. */
-			position_glyph(cr, CELL_X(x_min, charpos), CELL_Y(charpos),
-					idx, &glyphs[nglyphs++]);
+			if (!use_pango) {
+				position_glyph(cr, CELL_X(x_min, charpos), CELL_Y(charpos),
+						idx, &glyphs[nglyphs++]);
+			} else {
+#ifdef CAN_DRAW_WITH_PANGO
+				char buf[9];
+				gint len;
+				double baseline;
+
+				len = g_unichar_to_utf8((gunichar) *charcode, buf);
+				pango_layout_set_text(layout, buf, len);
+
+				baseline = pango_layout_get_baseline (layout) / PANGO_SCALE;
+				cairo_move_to(cr, CELL_X(x_min, charpos), CELL_Y(charpos) + glyph_baseline_offset - baseline);
+				if (no_embed)
+					pango_cairo_layout_path(cr, layout);
+				else
+					pango_cairo_show_layout(cr, layout);
+#endif
+			}
 
 			filled_cells[charpos] = true;
 
@@ -640,13 +732,15 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		}
 
 		/* Show previously positioned glyphs */
-		if (no_embed) {
-			cairo_save(cr);
-			cairo_glyph_path (cr, glyphs, nglyphs);
-			cairo_fill(cr);
-			cairo_restore(cr);
-		} else {
-			cairo_show_glyphs(cr, glyphs, nglyphs);
+		if (!use_pango) {
+			if (no_embed) {
+				cairo_save(cr);
+				cairo_glyph_path (cr, glyphs, nglyphs);
+				cairo_fill(cr);
+				cairo_restore(cr);
+			} else {
+				cairo_show_glyphs(cr, glyphs, nglyphs);
+			}
 		}
 
 		for (i = 0; i < tbl_end - tbl_start; i++)
@@ -659,6 +753,16 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		cairo_show_page(cr);
 		cairo_restore(cr);
 	} while (idx && is_in_block(*charcode, block));
+
+#ifdef CAN_DRAW_WITH_PANGO
+	if (use_pango) {
+		g_object_unref(layout);
+		g_object_unref(context);
+		g_object_unref(fontmap);
+		pango_font_description_free(font_desc);
+		FcConfigDestroy(fc_config);
+	}
+#endif
 
 	*charcode = prev_charcode;
 	return npages;
@@ -674,8 +778,9 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
 	FT_UInt idx;
 	const struct unicode_block *block;
 	int pageno = 1;
+	cairo_surface_t *surface = cairo_get_target(cr);
 
-	outline(0, pageno, fontname);
+	outline(surface, 0, pageno, fontname);
 
 	charcode = get_first_char(ft_face, &idx);
 
@@ -683,7 +788,7 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
 		block = get_unicode_block(charcode);
 		if (block) {
 			int npages;
-			outline(1, pageno, block->name);
+			outline(surface, 1, pageno, block->name);
 			npages = draw_unicode_block(cr, font, ft_face, fontname,
 					&charcode, block, ft_other_face);
 			pageno += npages;
@@ -711,7 +816,9 @@ static void usage(const char *cmd)
 			"  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
 			"  --svg,               -g              Use SVG format for output\n"
 			"  --print-outline,     -l              Print document outlines data to standard output\n"
+			"  --write-outline,     -w              Write document outlines (only in PDF output)\n"
 			"  --no-embed,          -e              Don't embed the font in the output file, draw the glyphs instead\n"
+			"  --use-pango          -p              Use Pango for drawing glyph cells\n"
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
 			"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
 			"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"));
@@ -851,16 +958,16 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 		fprintf(stderr, _("The font has strange metrics: ascent + descent = %g\n"), act_size);
 		exit(5);
 	}
-	double scale = tgt_size / act_size;
-	if (scale > 1)
-		scale = trunc(scale); // just to make numbers nicer
-	if (scale > 20)
-		scale = 20; // Do not make font larger than in previous versions
+	font_scale = tgt_size / act_size;
+	if (font_scale > 1)
+		font_scale = trunc(font_scale); // just to make numbers nicer
+	if (font_scale > 20)
+		font_scale = 20; // Do not make font larger than in previous versions
 
 	cairo_scaled_font_destroy(cr_font);
 
 	/* Create the font once again, but this time scaled */
-	cairo_matrix_init_scale(&font_matrix, scale, scale);
+	cairo_matrix_init_scale(&font_matrix, font_scale, font_scale);
 	cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
 	cairo_scaled_font_extents(cr_font, &extents);
 	glyph_baseline_offset = (tgt_size - (extents.ascent + extents.descent)) / 2 + 2 + extents.ascent;
