@@ -21,5 +21,6 @@ addons:
 
 script:
 - mkdir build
-- cd build && cmake ..
-- cd build && make -DVERBOSE=1
+- cd build
+- cmake ..
+- make -DVERBOSE=1
