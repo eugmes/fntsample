@@ -23,4 +23,4 @@ script:
 - mkdir build
 - cd build
 - cmake ..
-- make -DVERBOSE=1
+- make VERBOSE=1
