@@ -13,7 +13,7 @@ find_package(Intl REQUIRED)
 find_package(Gettext REQUIRED)
 find_package(Iconv REQUIRED)
 
-pkg_check_modules(pkgs REQUIRED cairo fontconfig freetype2 glib-2.0 pangocairo>=1.37 pangoft2>=1.37)
+pkg_check_modules(pkgs REQUIRED cairo fontconfig freetype2 glib-2.0 pangocairo>=1.16 pangoft2)
 
 find_program(AWK NAMES gawk awk mawk)
 if(NOT AWK)

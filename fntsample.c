@@ -41,6 +41,10 @@
 #include "unicode_blocks.h"
 #include "config.h"
 
+#if PANGO_VERSION_CHECK(1,37,0)
+#define CAN_DRAW_WITH_PANGO
+#endif
+
 #if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1,15,4)
 #define CAN_USE_CAIRO_OUTLINES
 #endif
@@ -382,7 +386,12 @@ static void parse_options(int argc, char * const argv[])
 			no_embed = true;
 			break;
 		case 'p':
+#ifdef CAN_DRAW_WITH_PANGO
 			use_pango = true;
+#else
+			fprintf(stderr, _("Pango >= 1.37 is required for this option!\n"));
+			exit(1);
+#endif
 			break;
 		case '?':
 		default:
@@ -619,6 +628,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 	unsigned long prev_cell;
 	int npages = 0;
 
+#ifdef CAN_DRAW_WITH_PANGO
 	FcConfig *fc_config = NULL;
 	PangoFontMap *fontmap = NULL;
 	PangoContext *context = NULL;
@@ -639,6 +649,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		pango_layout_set_width(layout, cell_width * PANGO_SCALE);
 		pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 	}
+#endif
 
 	idx = FT_Get_Char_Index(ft_face, *charcode);
 
@@ -689,6 +700,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 				position_glyph(cr, CELL_X(x_min, charpos), CELL_Y(charpos),
 						idx, &glyphs[nglyphs++]);
 			} else {
+#ifdef CAN_DRAW_WITH_PANGO
 				char buf[9];
 				gint len;
 				double baseline;
@@ -702,6 +714,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 					pango_cairo_layout_path(cr, layout);
 				else
 					pango_cairo_show_layout(cr, layout);
+#endif
 			}
 
 			filled_cells[charpos] = true;
@@ -740,6 +753,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		cairo_restore(cr);
 	} while (idx && is_in_block(*charcode, block));
 
+#ifdef CAN_DRAW_WITH_PANGO
 	if (use_pango) {
 		g_object_unref(layout);
 		g_object_unref(context);
@@ -747,6 +761,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		pango_font_description_free(font_desc);
 		FcConfigDestroy(fc_config);
 	}
+#endif
 
 	*charcode = prev_charcode;
 	return npages;
