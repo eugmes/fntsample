@@ -33,7 +33,7 @@
 
 use strict;
 use PDF::API2;
-use Locale::TextDomain('##PACKAGE##', '##LOCALEDIR##');
+use Locale::TextDomain('@CMAKE_PROJECT_NAME@', '@CMAKE_INSTALL_FULL_LOCALEDIR@');
 use POSIX qw(:locale_h);
 use subs qw(add_outlines);
 

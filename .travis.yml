@@ -17,9 +17,9 @@ addons:
     - libfreetype6-dev
     - libpango1.0-dev
     - gettext
-    - autotools-dev
+    - cmake
 
 script:
-- autoreconf --install
-- ./configure --disable-silent-rules
-- make
+- mkdir build
+- cd build && cmake ..
+- cd build && make -DVERBOSE=1
