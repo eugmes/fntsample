@@ -357,9 +357,8 @@ static void parse_options(int argc, char * const argv[])
 			print_outline = true;
 			break;
 		case 'w':
-#ifdef CAN_USE_CAIRO_OUTLINES
 			write_outline = true;
-#else
+#ifndef CAN_USE_CAIRO_OUTLINES
 			fprintf(stderr, _("Cairo >= 1.15.4 is required for this option!\n"));
 			exit(1);
 #endif
