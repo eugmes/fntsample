@@ -22,5 +22,5 @@ addons:
 script:
 - mkdir build
 - cd build
-- cmake ..
+- cmake .. -DCMAKE_C_FLAGS=-Werror
 - make VERBOSE=1
