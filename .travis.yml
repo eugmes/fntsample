@@ -24,3 +24,6 @@ script:
 - cd build
 - cmake .. -DCMAKE_C_FLAGS=-Werror
 - make VERBOSE=1
+- ./fntsample --help
+- make DESTDIR=tmp install
+- ls -lR tmp
