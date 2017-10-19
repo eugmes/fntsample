@@ -72,6 +72,7 @@ set(SOURCES
 add_executable(fntsample ${SOURCES})
 
 target_link_libraries(fntsample
+  m
   ${Intl_LIBRARIES}
   ${Iconv_LIBRARIES}
   ${pkgs_LIBRARIES}
