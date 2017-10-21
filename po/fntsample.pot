@@ -5,9 +5,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: fntsample 4.1\n"
+"Project-Id-Version: fntsample\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2017-10-18 19:03+0200\n"
+"POT-Creation-Date: 2017-10-22 01:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,37 +16,47 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: fntsample.c:327 fntsample.c:345
+#: fntsample.c:331
+#, c-format
+msgid "Unicode blocks file should be given at most once!\n"
+msgstr ""
+
+#: fntsample.c:337
+#, c-format
+msgid "Failed to load any blocks from the blocks file!\n"
+msgstr ""
+
+#: fntsample.c:343 fntsample.c:361
 #, c-format
 msgid "Font file name should be given only once!\n"
 msgstr ""
 
-#: fntsample.c:334
+#: fntsample.c:350
 #, c-format
 msgid "Output file name should be given only once!\n"
 msgstr ""
 
-#: fntsample.c:363
+#: fntsample.c:378
 #, c-format
 msgid "Cairo >= 1.15.4 is required for this option!\n"
 msgstr ""
 
-#: fntsample.c:393
+#: fntsample.c:408
 #, c-format
 msgid "Pango >= 1.37 is required for this option!\n"
 msgstr ""
 
-#: fntsample.c:409
+#: fntsample.c:424
 #, c-format
 msgid "Font index should be non-negative!\n"
 msgstr ""
 
-#: fntsample.c:413
+#: fntsample.c:428
 #, c-format
 msgid "-s and -g cannot be used together!\n"
 msgstr ""
 
-#: fntsample.c:807
+#: fntsample.c:825
 #, c-format
 msgid ""
 "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
@@ -54,10 +64,12 @@ msgid ""
 "\n"
 msgstr ""
 
-#: fntsample.c:809
+#: fntsample.c:827
 #, c-format
 msgid ""
 "Options:\n"
+"  --blocks-file,       -b BLOCKS-FILE  Read Unicode blocks information from "
+"BLOCKS-FILE\n"
 "  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
 "  --font-index,        -n IDX          Font index in FONT-FILE\n"
 "  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
@@ -81,51 +93,51 @@ msgid ""
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
 msgstr ""
 
-#: fntsample.c:825
+#: fntsample.c:844
 #, c-format
 msgid ""
 "\n"
 "Supported styles (and default values):\n"
 msgstr ""
 
-#: fntsample.c:953
+#: fntsample.c:972
 #, c-format
 msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
 msgstr ""
 
-#: fntsample.c:958
+#: fntsample.c:977
 #, c-format
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr ""
 
 #. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
-#: fntsample.c:997
+#: fntsample.c:1016
 #, c-format
 msgid "%s: freetype error\n"
 msgstr ""
 
-#: fntsample.c:1003
+#: fntsample.c:1022
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr ""
 
-#: fntsample.c:1012
+#: fntsample.c:1031
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr ""
 
 #. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
-#: fntsample.c:1027
+#: fntsample.c:1046
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr ""
 
-#: fntsample.c:1035
+#: fntsample.c:1054
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
 msgstr ""
 
-#: fntsample.c:1047
+#: fntsample.c:1066
 #, c-format
 msgid "%s: failed to create scaled font: %s\n"
 msgstr ""
