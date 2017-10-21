@@ -4,7 +4,7 @@
 BEGIN {
 	print "#include \"unicode_blocks.h\""
 	print ""
-	print "const struct unicode_block unicode_blocks[] = {"
+	print "const struct unicode_block static_unicode_blocks[] = {"
 }
 
 /^[^#]/ {

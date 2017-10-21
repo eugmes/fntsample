@@ -63,6 +63,7 @@
 #define CELL_Y(N)	(ymin_border + cell_height * ((N) % 16))
 
 static struct option longopts[] = {
+  {"blocks-file", 1, 0, 'b'},
   {"font-file", 1, 0, 'f'},
   {"output-file", 1, 0, 'o'},
   {"help", 0, 0, 'h'},
@@ -125,6 +126,8 @@ static double cell_label_offset;
 static double cell_glyph_bot_offset;
 static double glyph_baseline_offset;
 static double font_scale;
+
+static const struct unicode_block *unicode_blocks;
 
 static void usage(const char *);
 
@@ -315,13 +318,26 @@ static void parse_options(int argc, char * const argv[])
 {
 	for (;;) {
 		int c;
+		int n;
 
-		c = getopt_long(argc, argv, "f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
+		c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
 
 		if (c == -1)
 			break;
 
 		switch (c) {
+		case 'b':
+			if (unicode_blocks) {
+				fprintf(stderr, _("Unicode blocks file should be given at most once!\n"));
+				exit(1);
+			}
+
+			unicode_blocks = read_blocks(optarg, &n);
+			if (n == 0) {
+				fprintf(stderr, _("Failed to load any blocks from the blocks file!\n"));
+				exit(6);
+			}
+			break;
 		case 'f':
 			if (font_file_name) {
 				fprintf(stderr, _("Font file name should be given only once!\n"));
@@ -412,6 +428,9 @@ static void parse_options(int argc, char * const argv[])
 		fprintf(stderr, _("-s and -g cannot be used together!\n"));
 		exit(1);
 	}
+
+	if (!unicode_blocks)
+		unicode_blocks = static_unicode_blocks;
 }
 
 /*
@@ -806,6 +825,7 @@ static void usage(const char *cmd)
 	fprintf(stderr, _("Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
 			"       %s -h\n\n") , cmd, cmd);
 	fprintf(stderr, _("Options:\n"
+			"  --blocks-file,       -b BLOCKS-FILE  Read Unicode blocks information from BLOCKS-FILE\n"
 			"  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
 			"  --font-index,        -n IDX          Font index in FONT-FILE\n"
 			"  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"

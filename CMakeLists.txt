@@ -64,6 +64,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
 
 set(SOURCES
   fntsample.c
+  read_blocks.c
   unicode_blocks.h
   ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
   ${CMAKE_CURRENT_BINARY_DIR}/config.h
