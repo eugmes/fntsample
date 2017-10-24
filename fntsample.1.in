@@ -29,6 +29,10 @@ into PDF (default) or PostScript file.
 .B fntsample
 supports the following options.
 .TP
+.BI "\-\-blocks\-file, \-b " BLOCKS-FILE
+Read Unicode blocks information from 
+.IR BLOCKS-FILE .
+.TP
 .BI "\-\-font\-file, \-f " FONT-FILE
 Make samples of 
 .IR FONT-FILE .
@@ -65,6 +69,16 @@ Use range selection options to specify which.
 .BI "\-\-print\-outline, \-l"
 Print document outlines data to standard output.
 This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
+.TP
+.BI "\-\-write\-outline, \-w"
+Write document outlines directly (only in PDF output), requires \fBcairo\fP >= 1.15.4.
+.TP
+.BI "\-\-use\-pango, \-p"
+Use Pango for drawing glyph cells.
+Pango applies OpenType layout which may be more bullet proof than just
+relaying on the font's cmap.
+This especially important for fonts that reply on OpenType layout for
+showing even the base forms of the glyphs.
 .TP
 .BI "\-\-include\-range, \-i " RANGE
 Show characters in \fIRANGE\fP.
@@ -131,9 +145,9 @@ fntsample \-f font.ttf \-o temp.pdf \-l > outlines.txt
 pdfoutline temp.pdf outlines.txt samples.pdf
 .ESAMPLE
 .SH AUTHOR
-Copyright \(co 2007 Eugeniy Meshcheryakov <eugen@debian.org>
+Copyright \(co 2007-2017 Eugeniy Meshcheryakov <eugen@debian.org>
 .br
-Homepage: <http://fntsample.sourceforge.net/>
+Homepage: <http://https://github.com/eugmes/fntsample/>
 .SH SEE ALSO
 .PP
 .BR pdfoutline (1)
