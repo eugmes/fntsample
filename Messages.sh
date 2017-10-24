@@ -8,7 +8,7 @@ set -e
 XGETTEXT="xgettext --keyword=_ --keyword=N_ --keyword=__ --keyword=__x --default-domain=fntsample --add-comments=TRANSLATORS: --foreign-user --package-name fntsample --msgid-bugs-address=eugen@debian.org"
 MSGMERGE="msgmerge --backup=none --update --verbose"
 
-${XGETTEXT} fntsample.c pdfoutline.pl -o po/fntsample.pot
+${XGETTEXT} fntsample.c read_blocks.c pdfoutline.pl -o po/fntsample.pot
 
 for po_file in po/*.po
 do
