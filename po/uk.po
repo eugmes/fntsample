@@ -4,10 +4,10 @@
 # Eugeniy Meshcheryakov <eugen@debian.org>, 2009, 2010, 2017.
 msgid ""
 msgstr ""
-"Project-Id-Version: fntsample 2.8\n"
+"Project-Id-Version: fntsample\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
 "POT-Creation-Date: 2017-10-22 01:32+0200\n"
-"PO-Revision-Date: 2017-10-19 09:11+0100\n"
+"PO-Revision-Date: 2017-10-25 17:33+0100\n"
 "Last-Translator: Eugeniy Meshcheryakov <eugen@debian.org>\n"
 "Language-Team: Ukrainian <>\n"
 "Language: uk\n"
@@ -15,18 +15,18 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Lokalize 2.0\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<"
+"=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #: fntsample.c:331
-#, fuzzy, c-format
+#, c-format
 msgid "Unicode blocks file should be given at most once!\n"
-msgstr "Назву файлу шрифтів потрібно вказувати тільки один раз!\n"
+msgstr "Файл блоків Unicode можна вказувати тільки один раз!\n"
 
 #: fntsample.c:337
 #, c-format
 msgid "Failed to load any blocks from the blocks file!\n"
-msgstr ""
+msgstr "Не вдалося завантажити жодного блока з файлу блоків!\n"
 
 #: fntsample.c:343 fntsample.c:361
 #, c-format
@@ -70,7 +70,7 @@ msgstr ""
 "\n"
 
 #: fntsample.c:827
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Options:\n"
 "  --blocks-file,       -b BLOCKS-FILE  Read Unicode blocks information from "
@@ -98,6 +98,8 @@ msgid ""
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
 msgstr ""
 "Опції:\n"
+"  --blocks-file,       -b ФАЙЛ-БЛОКІВ     Читати інформацію про блоки Unicode"
+" з ФАЙЛУ-БЛОКІВ\n"
 "  --font-file,         -f ФАЙЛ-ШРИФТУ     Створити зразки ФАЙЛУ-ШРИФТУ\n"
 "  --font-index,        -n ІНД             Індекс шрифту в ФАЙЛІ-ШРИФТУ\n"
 "  --output-file,       -o ФАЙЛ-РЕЗУЛЬТАТУ Зберегти зразки в ФАЙЛ-РЕЗУЛЬТАТУ\n"
@@ -182,3 +184,5 @@ msgstr "Використання: %s оригінальний.pdf зміст.txt
 #, perl-brace-format
 msgid "Cannot open outline file '{outlinefile}'"
 msgstr "Неможливо відкрити файл змісту '{outlinefile}'"
+
+
