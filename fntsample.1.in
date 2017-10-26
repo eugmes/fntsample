@@ -147,7 +147,7 @@ pdfoutline temp.pdf outlines.txt samples.pdf
 .SH AUTHOR
 Copyright \(co 2007-2017 Eugeniy Meshcheryakov <eugen@debian.org>
 .br
-Homepage: <http://https://github.com/eugmes/fntsample/>
+Homepage: <https://github.com/eugmes/fntsample/>
 .SH SEE ALSO
 .PP
 .BR pdfoutline (1)
