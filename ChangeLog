@@ -1,3 +1,12 @@
+Changes in version 5.0
+	* Add command line flag that allows to use pango for text layout
+	  (by Khaled Hosny, requires pango >= 1.37)
+	* Add possiblility to create PDF outline directly using cairo
+	  (by Khaled Hosny, requires cairo >= 1.15.4)
+	* Switch to CMake as build system
+	* Add command line flag for loading Unicode blocks file during
+	  runtime.
+
 Changes in version 4.1:
 	* Detect iconv and add LIBICONV to LDADD
 	* Detect support for -Wl,--as-needed in configure
