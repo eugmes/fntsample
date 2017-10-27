@@ -465,10 +465,7 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
 		printf("%d %d %s\n", level, page, text);
 
 #ifdef CAN_USE_CAIRO_OUTLINES
-	if (cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF)
-		return;
-
-	if (write_outline) {
+	if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
 		char *dest = NULL;
 		int len = 0;
 
