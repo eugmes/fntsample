@@ -77,7 +77,7 @@ Write document outlines directly (only in PDF output), requires \fBcairo\fP >= 1
 Use Pango for drawing glyph cells.
 Pango applies OpenType layout which may be more bullet proof than just
 relaying on the font's cmap.
-This especially important for fonts that reply on OpenType layout for
+This especially important for fonts that rely on OpenType layout for
 showing even the base forms of the glyphs.
 .TP
 .BI "\-\-include\-range, \-i " RANGE
