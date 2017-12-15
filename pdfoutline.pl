@@ -35,6 +35,7 @@ use strict;
 use PDF::API2;
 use Locale::TextDomain('@CMAKE_PROJECT_NAME@', '@CMAKE_INSTALL_FULL_LOCALEDIR@');
 use POSIX qw(:locale_h);
+use Encode qw(encode);
 use subs qw(add_outlines);
 
 sub usage() {
@@ -55,6 +56,17 @@ sub get_line($) {
 		last;
 	}
 	return $line;
+}
+
+# Encode string to UTF-16BE with BOM if it contains non-ASCII characters
+sub encode_pdf_text($) {
+	my $str = shift;
+
+	if ($str !~ /[^[:ascii:]]/) {
+		return $str;
+	} else {
+		return encode("UTF-16", $str);
+	}
 }
 
 sub add_outlines($$$$) {
@@ -78,7 +90,7 @@ sub add_outlines($$$$) {
 		}
 		else {
 			$cur_outline = $parent->outline;
-			$cur_outline->title($text);
+			$cur_outline->title(encode_pdf_text($text));
 			# FIXME it should be posible to make it easier
 			my $pdfpage = $pdf->{pagestack}->[$page - 1];
 			$cur_outline->dest($pdfpage);
@@ -99,7 +111,7 @@ my $inputfile = $ARGV[0];
 my $outlinefile = $ARGV[1];
 my $outputfile = $ARGV[2];
 my $pdf = PDF::API2->open($inputfile);
-open(OUTLINE, "<", $outlinefile) or die __x("Cannot open outline file '{outlinefile}'", outlinefile => $outlinefile);
+open(OUTLINE, "<:encoding(UTF-8)", $outlinefile) or die __x("Cannot open outline file '{outlinefile}'", outlinefile => $outlinefile);
 my $line = get_line(*OUTLINE);
 add_outlines($pdf, $pdf->outlines, $line, *OUTLINE) if $line;
 $pdf->saveas($outputfile);
