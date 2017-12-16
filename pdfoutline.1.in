@@ -33,6 +33,7 @@ Page numeration starts with 1.
 .P
 Outlines file can contain comments that start with # in first column.
 Comments and empty lines are ignored.
+The text is expected to be in UTF-8 encoding.
 .SH OPTIONS
 .B pdfoutline
 accepts no options.
