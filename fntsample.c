@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <errno.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_SFNT_NAMES_H
@@ -1034,8 +1035,49 @@ int main(int argc, char **argv)
 		surface = cairo_ps_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
 	else if (svg_output)
 		surface = cairo_svg_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
-	else
+	else {
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
+
+#ifdef CAN_USE_CAIRO_OUTLINES
+		char buffer[25];
+		char *endptr;
+		char *source_date_epoch;
+		unsigned long long epoch;
+		time_t now;
+		struct tm *build_time;
+		source_date_epoch = getenv("SOURCE_DATE_EPOCH");
+		if (source_date_epoch) {
+			errno = 0;
+			epoch = strtoull(source_date_epoch, &endptr, 10);
+			if ((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0)) || (errno != 0 && epoch == 0)) {
+				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"),
+						strerror(errno));
+				exit(1);
+			}
+			if (endptr == source_date_epoch) {
+				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"),
+						endptr);
+				exit(1);
+			}
+			if (*endptr != '\0') {
+				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"),
+						endptr);
+				exit(1);
+			}
+			if (epoch > ULONG_MAX) {
+				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"),
+						ULONG_MAX, epoch);
+				exit(1);
+			}
+			now = (time_t)epoch;
+			build_time = gmtime(&now);
+			strftime(buffer, 25, "%Y-%m-%dT%H:%M:%S%z", build_time);
+			cairo_pdf_surface_set_metadata(surface,
+							CAIRO_PDF_METADATA_CREATE_DATE,
+							buffer);
+		}
+#endif
+	}
 
 	cr_status = cairo_surface_status(surface);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
