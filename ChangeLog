@@ -1,3 +1,6 @@
+Changes in version 5.3
+	* Support reproducible builds with PDF output (Khaled Hosny)
+
 Changes in version 5.2
 	* Fix handling of non-ASCII characters in pdfoutline
 
