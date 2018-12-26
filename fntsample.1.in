@@ -121,6 +121,12 @@ this glyph is not defined in Unicode;
 .TP
 .B yellow
 this is a new glyph (only when used with \fB\-d\fP).
+.SH ENVIRONMENT
+.TP
+.B SOURCE_DATE_EPOCH
+If $\fBSOURCE_DATE_EPOCH\fP is set, its value is interpreted as Unix timestamp to be used
+for creation date of generated PDF files.
+This is useful for making builds that use \fBfntsample\fP reproducible.
 .SH EXAMPLES
 .RI "Make PDF samples for " font.ttf " and write them to file " samples.pdf :
 .SAMPLE
