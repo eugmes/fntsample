@@ -100,6 +100,22 @@ sub add_outlines($$$$) {
 	}
 }
 
+# Create new outlines object ignorig outlines that can be
+# already present in the PDF file.
+sub new_outlines($) {
+	my $pdf = shift;
+
+	require PDF::API2::Outlines;
+	$pdf->{'pdf'}->{'Root'}->{'Outlines'} = PDF::API2::Outlines->new($pdf);
+	my $obj = $pdf->{'pdf'}->{'Root'}->{'Outlines'};
+
+	$pdf->{'pdf'}->new_obj($obj) unless $obj->is_obj($pdf->{'pdf'});
+	$pdf->{'pdf'}->out_obj($obj);
+	$pdf->{'pdf'}->out_obj($pdf->{'pdf'}->{'Root'});
+
+	return $obj;
+}
+
 setlocale(LC_ALL, '');
 
 if ($#ARGV != 2) {
@@ -113,6 +129,10 @@ my $outputfile = $ARGV[2];
 my $pdf = PDF::API2->open($inputfile);
 open(OUTLINE, "<:encoding(UTF-8)", $outlinefile) or die __x("Cannot open outline file '{outlinefile}'", outlinefile => $outlinefile);
 my $line = get_line(*OUTLINE);
-add_outlines($pdf, $pdf->outlines, $line, *OUTLINE) if $line;
+
+# create new outlines here, don't try to use old ones
+my $outlines = new_outlines($pdf);
+
+add_outlines($pdf, $outlines, $line, *OUTLINE) if $line;
 $pdf->saveas($outputfile);
 exit 0;
