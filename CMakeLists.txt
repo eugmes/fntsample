@@ -46,6 +46,7 @@ configure_file(config.h.in config.h @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
 configure_file(pdfoutline.1.in pdfoutline.1 @ONLY)
 configure_file(pdfoutline.pl pdfoutline @ONLY)
+configure_file(pdf-extract-outline.pl pdf-extract-outline @ONLY)
 
 include_directories(fntsample
   ${CMAKE_CURRENT_BINARY_DIR}
@@ -82,6 +83,7 @@ target_link_libraries(fntsample
 install(TARGETS fntsample DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/pdfoutline"
+                 "${CMAKE_CURRENT_BINARY_DIR}/pdf-extract-outline"
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES "${PROJECT_BINARY_DIR}/fntsample.1"
