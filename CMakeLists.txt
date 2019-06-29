@@ -1,12 +1,10 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.11)
 project(fntsample C)
 
 set(CMAKE_C_STANDARD 99)
 
 include(CheckCCompilerFlag)
 include(GNUInstallDirs)
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
@@ -48,12 +46,18 @@ configure_file(pdfoutline.1.in pdfoutline.1 @ONLY)
 configure_file(pdfoutline.pl pdfoutline @ONLY)
 configure_file(pdf-extract-outline.pl pdf-extract-outline @ONLY)
 
-include_directories(fntsample
+include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${Intl_INCLUDE_DIRS}
   ${Iconv_INCLUDE_DIRS}
   ${pkgs_INCLUDE_DIRS}
+)
+
+link_directories(
+  ${Intl_LIBRARY_DIRS}
+  ${Iconv_LIBRARY_DIRS}
+  ${pkgs_LIBRARY_DIRS}
 )
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
