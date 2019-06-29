@@ -991,6 +991,57 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 	return cr_font;
 }
 
+/*
+ * Configure DPF surface metadata so fntsample can be used with
+ * repeatable builds.
+ */
+static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
+{
+#ifdef CAN_USE_CAIRO_OUTLINES
+	char buffer[25];
+	char *endptr;
+	char *source_date_epoch;
+	unsigned long long epoch;
+	time_t now;
+	struct tm *build_time;
+
+	source_date_epoch = getenv("SOURCE_DATE_EPOCH");
+
+	if (source_date_epoch) {
+		errno = 0;
+		epoch = strtoull(source_date_epoch, &endptr, 10);
+		if ((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0)) || (errno != 0 && epoch == 0)) {
+			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"),
+					strerror(errno));
+			exit(1);
+		}
+		if (endptr == source_date_epoch) {
+			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"),
+				endptr);
+			exit(1);
+		}
+		if (*endptr != '\0') {
+			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"),
+				endptr);
+			exit(1);
+		}
+		if (epoch > ULONG_MAX) {
+			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"),
+				ULONG_MAX, epoch);
+			exit(1);
+		}
+		now = (time_t)epoch;
+		build_time = gmtime(&now);
+		strftime(buffer, 25, "%Y-%m-%dT%H:%M:%S%z", build_time);
+		cairo_pdf_surface_set_metadata(surface,
+					       CAIRO_PDF_METADATA_CREATE_DATE,
+					       buffer);
+	}
+#else
+	(void)surface;
+#endif
+}
+
 int main(int argc, char **argv)
 {
 	cairo_surface_t *surface;
@@ -1037,46 +1088,7 @@ int main(int argc, char **argv)
 		surface = cairo_svg_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
 	else {
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
-
-#ifdef CAN_USE_CAIRO_OUTLINES
-		char buffer[25];
-		char *endptr;
-		char *source_date_epoch;
-		unsigned long long epoch;
-		time_t now;
-		struct tm *build_time;
-		source_date_epoch = getenv("SOURCE_DATE_EPOCH");
-		if (source_date_epoch) {
-			errno = 0;
-			epoch = strtoull(source_date_epoch, &endptr, 10);
-			if ((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0)) || (errno != 0 && epoch == 0)) {
-				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"),
-						strerror(errno));
-				exit(1);
-			}
-			if (endptr == source_date_epoch) {
-				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"),
-						endptr);
-				exit(1);
-			}
-			if (*endptr != '\0') {
-				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"),
-						endptr);
-				exit(1);
-			}
-			if (epoch > ULONG_MAX) {
-				fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"),
-						ULONG_MAX, epoch);
-				exit(1);
-			}
-			now = (time_t)epoch;
-			build_time = gmtime(&now);
-			strftime(buffer, 25, "%Y-%m-%dT%H:%M:%S%z", build_time);
-			cairo_pdf_surface_set_metadata(surface,
-							CAIRO_PDF_METADATA_CREATE_DATE,
-							buffer);
-		}
-#endif
+		set_repeatable_pdf_metadata(surface);
 	}
 
 	cr_status = cairo_surface_status(surface);
