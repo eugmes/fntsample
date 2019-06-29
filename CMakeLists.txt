@@ -59,6 +59,10 @@ set(SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
+# TODO Replace with commented-out code when cmake 3.12 becomes
+# more available
+link_directories(${Intl_LIBRARY_DIRS})
+
 add_executable(fntsample ${SOURCES})
 
 target_include_directories(fntsample PRIVATE
@@ -67,9 +71,10 @@ target_include_directories(fntsample PRIVATE
   ${Intl_INCLUDE_DIRS}
 )
 
-target_link_directories(fntsample PRIVATE
-  ${Intl_LIBRARY_DIRS}
-)
+# Requires CMake 3.12
+# target_link_directories(fntsample PRIVATE
+#   ${Intl_LIBRARY_DIRS}
+# )
 
 target_link_libraries(fntsample PRIVATE
   m
