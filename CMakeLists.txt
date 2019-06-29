@@ -11,7 +11,7 @@ find_package(Intl REQUIRED)
 find_package(Gettext REQUIRED)
 find_package(Iconv REQUIRED)
 
-pkg_check_modules(pkgs REQUIRED cairo fontconfig freetype2 glib-2.0 pangocairo>=1.16 pangoft2)
+pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET cairo fontconfig freetype2 glib-2.0 pangocairo>=1.16 pangoft2)
 
 find_program(AWK NAMES gawk awk mawk)
 if(NOT AWK)
@@ -38,27 +38,11 @@ if(HAVE_AS_NEEDED)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
 endif()
 
-add_compile_options(-Wall -W -Wwrite-strings -Wstrict-prototypes -pedantic)
-
 configure_file(config.h.in config.h @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
 configure_file(pdfoutline.1.in pdfoutline.1 @ONLY)
 configure_file(pdfoutline.pl pdfoutline @ONLY)
 configure_file(pdf-extract-outline.pl pdf-extract-outline @ONLY)
-
-include_directories(
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${Intl_INCLUDE_DIRS}
-  ${Iconv_INCLUDE_DIRS}
-  ${pkgs_INCLUDE_DIRS}
-)
-
-link_directories(
-  ${Intl_LIBRARY_DIRS}
-  ${Iconv_LIBRARY_DIRS}
-  ${pkgs_LIBRARY_DIRS}
-)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
   COMMAND ${AWK} -f genblocks.awk ${UNICODE_BLOCKS} > ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
@@ -77,12 +61,25 @@ set(SOURCES
 
 add_executable(fntsample ${SOURCES})
 
-target_link_libraries(fntsample
+target_include_directories(fntsample PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${Intl_INCLUDE_DIRS}
+)
+
+target_link_directories(fntsample PRIVATE
+  ${Intl_LIBRARY_DIRS}
+)
+
+target_link_libraries(fntsample PRIVATE
   m
   ${Intl_LIBRARIES}
-  ${Iconv_LIBRARIES}
-  ${pkgs_LIBRARIES}
+  Iconv::Iconv
+  PkgConfig::pkgs
 )
+
+target_compile_options(fntsample PRIVATE
+  -Wall -W -Wwrite-strings -Wstrict-prototypes -pedantic)
 
 install(TARGETS fntsample DESTINATION ${CMAKE_INSTALL_BINDIR})
 
