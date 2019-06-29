@@ -183,6 +183,10 @@ open(OUTLINE, ">:encoding(UTF-8)", $outlinefile)
 my $outlines = $pdf->{'pdf'}->{'Root'}->{'Outlines'};
 
 if ($outlines) {
+	if ($pdf->{'pdf'}->{'Encrypt'}) {
+		die __('Extracting outlines from encrypted files is not supported');
+	}
+
 	my $first = $outlines->val->{'First'};
 	extract_outlines($pdf, 0, $first, *OUTLINE);
 }
