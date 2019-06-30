@@ -37,15 +37,14 @@ use PDF::API2;
 use Locale::TextDomain('@CMAKE_PROJECT_NAME@', '@CMAKE_INSTALL_FULL_LOCALEDIR@');
 use POSIX qw(:locale_h);
 use Encode qw(encode);
-use subs qw(add_outlines);
 
-sub usage() {
-	printf(__"Usage: %s input.pdf outline.txt out.pdf\n", $0);
+sub usage {
+	printf __"Usage: %s input.pdf outline.txt out.pdf\n", $0;
 }
 
 # get first non-empty non-comment line
-sub get_line($) {
-	my $F = shift;
+sub get_line {
+	my ($F) = @_;
 	my $line;
 
 	while ($line = <$F>) {
@@ -53,28 +52,25 @@ sub get_line($) {
 		# skip comments ...
 		next if $line =~ /^#/;
 		# ... and empty lines
-		next if $line =~ /^$/;
+		next if $line eq q{};
 		last;
 	}
 	return $line;
 }
 
 # Encode string to UTF-16BE with BOM if it contains non-ASCII characters
-sub encode_pdf_text($) {
-	my $str = shift;
+sub encode_pdf_text {
+	my ($str) = @_;
 
 	if ($str !~ /[^[:ascii:]]/) {
 		return $str;
 	} else {
-		return encode("UTF-16", $str);
+		return encode('UTF-16', $str);
 	}
 }
 
-sub add_outlines($$$$) {
-	my $pdf = shift;
-	my $parent = shift;
-	my $line = shift;
-	my $F = shift;
+sub add_outlines {
+	my ($pdf, $parent, $line, $F) = @_;
 	my $cur_outline;
 
 	my ($level) = split / /, $line;
@@ -85,11 +81,9 @@ sub add_outlines($$$$) {
 		if ($new_level > $level) {
 			$line = add_outlines($pdf, $cur_outline, $line, $F);
 			next MAINLOOP;
-		}
-		elsif ($new_level < $level) {
+		} elsif ($new_level < $level) {
 			return $line;
-		}
-		else {
+		} else {
 			$cur_outline = $parent->outline;
 			$cur_outline->title(encode_pdf_text($text));
 			# FIXME it should be posible to make it easier
@@ -103,8 +97,8 @@ sub add_outlines($$$$) {
 
 # Create new outlines object ignorig outlines that can be
 # already present in the PDF file.
-sub new_outlines($) {
-	my $pdf = shift;
+sub new_outlines {
+	my ($pdf) = @_;
 
 	require PDF::API2::Outlines;
 	$pdf->{'pdf'}->{'Root'}->{'Outlines'} = PDF::API2::Outlines->new($pdf);
@@ -117,23 +111,29 @@ sub new_outlines($) {
 	return $obj;
 }
 
-setlocale(LC_ALL, '');
+setlocale(LC_ALL, q{});
 
 if ($#ARGV != 2) {
 	usage;
 	exit 1;
 }
 
-my $inputfile = $ARGV[0];
-my $outlinefile = $ARGV[1];
-my $outputfile = $ARGV[2];
+my ($inputfile, $outlinefile, $outputfile) = @ARGV;
+
 my $pdf = PDF::API2->open($inputfile);
-open(OUTLINE, "<:encoding(UTF-8)", $outlinefile) or die __x("Cannot open outline file '{outlinefile}'", outlinefile => $outlinefile);
-my $line = get_line(*OUTLINE);
+
+open my $outline_fh, '<:encoding(UTF-8)', $outlinefile
+	or die __x("Cannot open outline file '{outlinefile}'",
+		outlinefile => $outlinefile);
+
+my $line = get_line($outline_fh);
 
 # create new outlines here, don't try to use old ones
 my $outlines = new_outlines($pdf);
 
-add_outlines($pdf, $outlines, $line, *OUTLINE) if $line;
+add_outlines($pdf, $outlines, $line, $outline_fh) if $line;
+close $outline_fh;
+
 $pdf->saveas($outputfile);
+
 exit 0;
