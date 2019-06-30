@@ -47,6 +47,7 @@ endif()
 
 configure_file(config.h.in config.h @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
+configure_file(pdf-extract-outline.1.in pdf-extract-outline.1 @ONLY)
 configure_file(pdfoutline.1.in pdfoutline.1 @ONLY)
 configure_file(pdfoutline.pl pdfoutline @ONLY)
 configure_file(pdf-extract-outline.pl pdf-extract-outline @ONLY)
@@ -101,6 +102,7 @@ install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/pdfoutline"
 
 install(FILES "${PROJECT_BINARY_DIR}/fntsample.1"
               "${PROJECT_BINARY_DIR}/pdfoutline.1"
+              "${PROJECT_BINARY_DIR}/pdf-extract-outline.1"
         DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 
 add_subdirectory(po)

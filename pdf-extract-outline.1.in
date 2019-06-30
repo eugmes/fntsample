@@ -1,0 +1,22 @@
+.\" -*- nroff -*-
+.TH pdf-extract-outline 1 @DATE@
+.SH NAME
+pdf-extract-outline \- extract outlines (aka bookmarks) from PDF files
+.SH SYNOPSIS
+.B pdf-extract-outline
+.I input.pdf outlines.txt
+.SH DESCRIPTION
+\fBpdf-extract-outline\fP reads input file given as first argument and extracts outlines
+into the file given as second argument.
+The output format is compatible with one accepted by \fBpdfoutline\fB.
+.SH OPTIONS
+.B pdf-extract-outline
+accepts no options.
+.SH SEE ALSO
+.B pdfoutline(1)
+.SH AUTHOR
+.B pdf-extract-outline
+author is Eugeniy Meshcheryakov <eugen@debian.org>
+.br
+\fBpdf-extract-outline\fP is part of \fBfntsample\fP and can be downoaded from
+<https://github.com/eugmes/fntsample>.
