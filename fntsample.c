@@ -821,8 +821,9 @@ static void usage(const char *cmd)
 
 	fprintf(stderr, _("\nSupported styles (and default values):\n"));
 
-	for (const struct fntsample_style *style = styles; style->name; style++)
+	for (const struct fntsample_style *style = styles; style->name; style++) {
 		fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
+	}
 }
 
 /*
@@ -1034,7 +1035,6 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 
 int main(int argc, char **argv)
 {
-
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
