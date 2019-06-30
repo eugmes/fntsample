@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#! /usr/bin/env perl
 # This file is in public domain
 # Author: Eugeniy Meshcheryakov <eugen@debian.org>
 #
@@ -32,6 +32,7 @@
 # +-Chapter 2
 
 use strict;
+use warnings;
 use PDF::API2;
 use Locale::TextDomain('@CMAKE_PROJECT_NAME@', '@CMAKE_INSTALL_FULL_LOCALEDIR@');
 use POSIX qw(:locale_h);
