@@ -657,6 +657,8 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		pango_layout_set_font_description(layout, font_desc);
 		pango_layout_set_width(layout, cell_width * PANGO_SCALE);
 		pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+	} else {
+		cairo_set_scaled_font(cr, font);
 	}
 
 	FT_UInt idx = FT_Get_Char_Index(ft_face, *charcode);
@@ -670,19 +672,11 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
 		bool filled_cells[256]; /* 16x16 glyphs max */
 
-		/* XXX WARNING: not reentrant! */
-		static cairo_glyph_t glyphs[256];
-		unsigned int nglyphs = 0;
-
 		cairo_save(cr);
 		draw_header(cr, fontname, block->name);
 		prev_cell = tbl_start - 1;
 
 		memset(filled_cells, '\0', sizeof(filled_cells));
-
-		if (!use_pango) {
-			cairo_set_scaled_font(cr, font);
-		}
 
 		/*
 		 * Fill empty cells and calculate coordinates of the glyphs.
@@ -703,25 +697,32 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 				highlight_cell(cr, CELL_X(x_min, charpos), CELL_Y(charpos));
 			}
 
-			/* For now just position glyphs. They will be shown later,
-			 * to make output more efficient. */
+			/* draw the character */
 			if (!use_pango) {
+				cairo_glyph_t glyph;
 				position_glyph(cr, CELL_X(x_min, charpos), CELL_Y(charpos),
-						idx, &glyphs[nglyphs++]);
+						idx, &glyph);
+				if (no_embed) {
+					cairo_save(cr);
+					cairo_glyph_path(cr, &glyph, 1);
+					cairo_fill(cr);
+					cairo_restore(cr);
+				} else {
+					cairo_show_glyphs(cr, &glyph, 1);
+				}
 			} else {
 				char buf[9];
-				gint len;
-				double baseline;
-
-				len = g_unichar_to_utf8((gunichar) *charcode, buf);
+				gint len = g_unichar_to_utf8((gunichar)*charcode, buf);
 				pango_layout_set_text(layout, buf, len);
 
-				baseline = pango_layout_get_baseline (layout) / PANGO_SCALE;
+				double baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
 				cairo_move_to(cr, CELL_X(x_min, charpos), CELL_Y(charpos) + glyph_baseline_offset - baseline);
-				if (no_embed)
+
+				if (no_embed) {
 					pango_cairo_layout_path(cr, layout);
-				else
+				} else {
 					pango_cairo_show_layout(cr, layout);
+				}
 			}
 
 			filled_cells[charpos] = true;
@@ -737,18 +738,10 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 			fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
 		}
 
-		/* Show previously positioned glyphs */
-		if (!use_pango) {
-			if (no_embed) {
-				cairo_save(cr);
-				cairo_glyph_path (cr, glyphs, nglyphs);
-				cairo_fill(cr);
-				cairo_restore(cr);
-			} else {
-				cairo_show_glyphs(cr, glyphs, nglyphs);
-			}
-		}
-
+                /*
+                 * Charcodes are drawn here to avoid switching between the charcode
+                 * font and the cell font for each filled cell.
+                 */
 		for (unsigned long i = 0; i < tbl_end - tbl_start; i++) {
 			if (filled_cells[i]) {
 				draw_charcode(cr, CELL_X(x_min, i), CELL_Y(i),
