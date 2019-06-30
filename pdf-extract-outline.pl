@@ -17,42 +17,39 @@ use POSIX qw(:locale_h);
 use Encode qw(decode find_encoding);
 use Encode::Guess;
 use List::MoreUtils qw(first_index);
-use Scalar::Util qw(blessed);
-use subs qw(extract_outlines search_tree);
 
 my $fallback_encoding = 'PDFDocumentEncoding';
 
 eval {
 	require Encode::PDFDocumentEncoding;
 	Encode::Guess->set_suspects(qw/PDFDocumentEncoding/);
-};
-
-if ($@) {
+	1;
+} or do {
 	warn 'Encode::PDFDocumentEncoding is missing, falling back to ASCII';
 	$fallback_encoding = 'ascii';
-}
+};
 
-sub decode_pdf($) {
-	my $s = shift;
+sub decode_pdf {
+	my ($s) = @_;
+
 	eval {
 		decode('Guess', $s);
-	} or eval {
+	} or do {
 		decode $fallback_encoding, $s, sub {
 			my $code = shift;
 			my $repr = sprintf "\\x%02X", $code;
 			warn "$fallback_encoding \"$repr\" does not map to Unicode";
-			"?";
+			return q{?};
 		};
 	}
 }
 
-sub usage() {
-	printf(__"Usage: %s input.pdf outline.txt\n", $0);
+sub usage {
+	printf __"Usage: %s input.pdf outline.txt\n", $0;
 }
 
-sub search_tree($$) {
-	my $tree = shift;
-	my $key = shift;
+sub search_tree {
+	my ($tree, $key) = @_;
 
 	if ($tree->{'Limits'}) {
 		my ($first, $last) = @{$tree->{'Limits'}->val};
@@ -76,11 +73,8 @@ sub search_tree($$) {
 	return;
 }
 
-sub extract_outlines($$$$) {
-	my $pdf = shift;
-	my $level = shift;
-	my $outline = shift;
-	my $F = shift;
+sub extract_outlines {
+	my ($pdf, $level, $outline, $F) = @_;
 
 	OUTLINE: for (; $outline; $outline = $outline->{'Next'}) {
 		$outline = $outline->val;
@@ -97,7 +91,7 @@ sub extract_outlines($$$$) {
 			if ($a->{'S'}->val eq 'GoTo') {
 				$dest = $a->{'D'};
 			} else {
-				warn "Action is not GoTo";
+				warn 'Action is not GoTo';
 				next OUTLINE;
 			}
 		} else {
@@ -105,12 +99,12 @@ sub extract_outlines($$$$) {
 			next OUTLINE;
 		}
 
-		if ($dest->isa('PDF::API2::Basic::PDF::Name')) {
+		if (ref($dest) eq 'PDF::API2::Basic::PDF::Name') {
 			# Find the destination in Dest dictionary in Root object.
 			my $named_ref = $dest->val;
 			my $dests = $pdf->{'pdf'}->{'Root'}->{'Dests'}->val;
 			$dest = $dests->{$named_ref};
-		} elsif ($dest->isa('PDF::API2::Basic::PDF::String')) {
+		} elsif (ref($dest) eq 'PDF::API2::Basic::PDF::String') {
 			# Find the destination in Dest tree in Names dictionary of Root object
 			my $names = $pdf->{'pdf'}->{'Root'}->{'Names'}->val;
 			my $tree = $names->{'Dests'}->val;
@@ -122,15 +116,15 @@ sub extract_outlines($$$$) {
 			}
 		}
 
-		if ($dest->isa('PDF::API2::Basic::PDF::Objind')) {
+		if (ref($dest) eq 'PDF::API2::Basic::PDF::Objind') {
 			$dest = $dest->val;
 		}
 
-		if (blessed($dest) and $dest->isa('PDF::API2::Basic::PDF::Dict')) {
+		if (ref($dest) eq 'PDF::API2::Basic::PDF::Dict') {
 			$dest = $dest->{'D'};
 		}
 
-		if (blessed($dest) and $dest->isa('PDF::API2::Basic::PDF::Array')) {
+		if (ref($dest) eq 'PDF::API2::Basic::PDF::Array') {
 			$dest = $dest->val;
 		}
 
@@ -142,7 +136,7 @@ sub extract_outlines($$$$) {
 		my $page = $dest->[0];
 		my $page_no;
 
-		if ($page->isa('PDF::API2::Basic::PDF::Number')) {
+		if (ref($page) eq 'PDF::API2::Basic::PDF::Number') {
 			# Some documents use numbers even for pages in the current document
 			$page_no = $page->val + 1;
 		} else {
@@ -165,18 +159,18 @@ sub extract_outlines($$$$) {
 	}
 }
 
-setlocale(LC_ALL, '');
+setlocale(LC_ALL, q{});
 
 if ($#ARGV != 1) {
 	usage;
 	exit 1;
 }
 
-my $pdffile = $ARGV[0];
-my $outlinefile = $ARGV[1];
+my ($pdffile, $outlinefile) = @ARGV;
+
 my $pdf = PDF::API2->open($pdffile);
 
-open(OUTLINE, ">:encoding(UTF-8)", $outlinefile)
+open my $outline_fh, '>:encoding(UTF-8)', $outlinefile
 	or die __x("Cannot open outline file '{outlinefile}'",
 	outlinefile => $outlinefile);
 
@@ -188,7 +182,7 @@ if ($outlines) {
 	}
 
 	my $first = $outlines->val->{'First'};
-	extract_outlines($pdf, 0, $first, *OUTLINE);
+	extract_outlines($pdf, 0, $first, $outline_fh);
 }
 
-close(OUTLINE);
+close $outline_fh;
