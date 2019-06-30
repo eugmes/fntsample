@@ -130,11 +130,10 @@ static void usage(const char *);
 
 static struct fntsample_style *find_style(const char *name)
 {
-	struct fntsample_style *style = styles;
-
-	for (; style->name; style++) {
-		if (!strcmp(name, style->name))
+	for (struct fntsample_style *style = styles; style->name; style++) {
+		if (!strcmp(name, style->name)) {
 			return style;
+		}
 	}
 
 	return NULL;
@@ -142,20 +141,21 @@ static struct fntsample_style *find_style(const char *name)
 
 static int set_style(const char *name, const char *val)
 {
-	struct fntsample_style *style;
-	char *new_val;
+	struct fntsample_style *style = find_style(name);
 
-	style = find_style(name);
-
-	if (!style)
+	if (!style) {
 		return -1;
+	}
 
-	new_val = strdup(val);
-	if (!new_val)
+	char *new_val = strdup(val);
+	if (!new_val) {
 		return -1;
+	}
 
-	if (style->val)
+	if (style->val) {
 		free(style->val);
+	}
+
 	style->val = new_val;
 
 	return 0;
@@ -165,19 +165,20 @@ static const char *get_style(const char *name)
 {
 	struct fntsample_style *style = find_style(name);
 
-	if (!style)
+	if (!style) {
 		return NULL;
+	}
 
 	return style->val ? style->val : style->default_val;
 }
 
 static int parse_style_string(char *s)
 {
-	char *n;
-
-	n = strchr(s, ':');
-	if (!n)
+	char *n = strchr(s, ':');
+	if (!n) {
 		return -1;
+	}
+
 	*n++ = '\0';
 	return set_style(s, n);
 }
@@ -189,52 +190,54 @@ static int parse_style_string(char *s)
  */
 static int add_range(char *range, bool include)
 {
-	struct range *r;
 	uint32_t first = 0, last = 0xffffffff;
-	char *minus;
 	char *endptr;
 
-	minus = strchr(range, '-');
+	char *minus = strchr(range, '-');
 
 	if (minus) {
 		if (minus != range) {
 			*minus = '\0';
 			first = strtoul(range, &endptr, 0);
-			if (*endptr)
+			if (*endptr) {
 				return -1;
+			}
 		}
 
 		if (*(minus + 1)) {
 			last = strtoul(minus + 1, &endptr, 0);
-			if (*endptr)
+			if (*endptr) {
 				return -1;
-		}
-		else if (minus == range)
+			}
+		} else if (minus == range) {
 			return -1;
-	}
-	else {
+		}
+	} else {
 		first = strtoul(range, &endptr, 0);
 		if (*endptr)
 			return -1;
 		last = first;
 	}
 
-	if (first > last)
+	if (first > last) {
 		return -1;
+	}
 
-	r = malloc(sizeof(*r));
-	if (!r)
+	struct range *r = malloc(sizeof(*r));
+	if (!r) {
 		return -1;
+	}
 
 	r->first = first;
 	r->last = last;
 	r->include = include;
 	r->next = NULL;
 
-	if (ranges)
+	if (ranges) {
 		last_range->next = r;
-	else
+	} else {
 		ranges = r;
+	}
 
 	last_range = r;
 
@@ -248,11 +251,11 @@ static int add_range(char *range, bool include)
 static bool in_range(uint32_t c)
 {
 	bool in = ranges ? (!ranges->include) : 1;
-	struct range *r;
 
-	for (r = ranges; r; r = r->next) {
-		if ((c >= r->first) && (c <= r->last))
+	for (struct range *r = ranges; r; r = r->next) {
+		if ((c >= r->first) && (c <= r->last)) {
 			in = r->include;
+		}
 	}
 	return in;
 }
@@ -284,12 +287,11 @@ static FT_ULong get_next_char(FT_Face face, FT_ULong charcode, FT_UInt *idx)
  */
 static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
 {
-	FT_ULong rval;
+	FT_ULong rval = FT_Get_First_Char(face, idx);
 
-	rval = FT_Get_First_Char(face, idx);
-
-	if (*idx && !in_range(rval))
+	if (*idx && !in_range(rval)) {
 		rval = get_next_char(face, rval, idx);
+	}
 
 	return rval;
 }
@@ -301,9 +303,7 @@ static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
  */
 static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const char *text, PangoRectangle *r)
 {
-	PangoLayout *layout;
-
-	layout = pango_cairo_create_layout (cr);
+	PangoLayout *layout = pango_cairo_create_layout(cr);
 	pango_layout_set_font_description(layout, ftdesc);
 	pango_layout_set_text(layout, text, -1);
 	pango_layout_get_extents(layout, r, NULL);
@@ -314,13 +314,12 @@ static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const
 static void parse_options(int argc, char * const argv[])
 {
 	for (;;) {
-		int c;
 		int n;
+		int c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
 
-		c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
-
-		if (c == -1)
+		if (c == -1) {
 			break;
+		}
 
 		switch (c) {
 		case 'b':
@@ -409,21 +408,25 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		}
 	}
+
 	if (!font_file_name || !output_file_name) {
 		usage(argv[0]);
 		exit(1);
 	}
+
 	if (font_index < 0 || other_index < 0) {
 		fprintf(stderr, _("Font index should be non-negative!\n"));
 		exit(1);
 	}
+
 	if (postscript_output && svg_output) {
 		fprintf(stderr, _("-s and -g cannot be used together!\n"));
 		exit(1);
 	}
 
-	if (!unicode_blocks)
+	if (!unicode_blocks) {
 		unicode_blocks = static_unicode_blocks;
+	}
 }
 
 /*
@@ -432,12 +435,12 @@ static void parse_options(int argc, char * const argv[])
  */
 static const struct unicode_block *get_unicode_block(unsigned long charcode)
 {
-	const struct unicode_block *block;
-
-	for (block = unicode_blocks; block->name; block++) {
-		if ((charcode >= block->start) && (charcode <= block->end))
+	for (const struct unicode_block *block = unicode_blocks; block->name; block++) {
+		if ((charcode >= block->start) && (charcode <= block->end)) {
 			return block;
+		}
 	}
+
 	return NULL;
 }
 
@@ -454,19 +457,20 @@ static bool is_in_block(unsigned long charcode, const struct unicode_block *bloc
  */
 static void outline(cairo_surface_t *surface, int level, int page, const char *text)
 {
-	if (print_outline)
+	if (print_outline) {
 		printf("%d %d %s\n", level, page, text);
+	}
 
 #ifdef CAN_USE_CAIRO_OUTLINES
 	if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
-		char *dest = NULL;
-		int len = 0;
-
-		len = snprintf(dest, 0, "page=%d", page);
+		char *dest;
+		int len = snprintf(dest, 0, "page=%d", page);
 		dest = malloc(len + 1);
 		sprintf(dest, "page=%d", page);
 
+		/* FIXME passing level here is not correct. */
 		cairo_pdf_surface_add_outline(surface, level, text, dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
+		free(dest);
 	}
 #else
 	(void)surface;
@@ -480,10 +484,9 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
  */
 static void draw_header(cairo_t *cr, const char *face_name, const char *block_name)
 {
-	PangoLayout *layout;
 	PangoRectangle r;
 
-	layout = layout_text(cr, font_name_font, face_name, &r);
+	PangoLayout *layout = layout_text(cr, font_name_font, face_name, &r);
 	cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 30.0);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
@@ -530,12 +533,8 @@ static void position_glyph(cairo_t *cr, double x, double y,
 static void draw_grid(cairo_t *cr, unsigned int x_cells,
 		unsigned long block_start)
 {
-	unsigned int i;
 	double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
 	double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
-	char buf[17];
-	PangoLayout *layout;
-	PangoRectangle r;
 
 #define TABLE_H (A4_HEIGHT - ymin_border * 2)
 	cairo_set_line_width(cr, 1.0);
@@ -548,25 +547,28 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 
 	cairo_set_line_width(cr, 0.5);
 	/* draw horizontal lines */
-	for (i = 1; i < 16; i++) {
+	for (int i = 1; i < 16; i++) {
 		cairo_move_to(cr, x_min, 72.0 + i * TABLE_H/16);
 		cairo_line_to(cr, x_max, 72.0 + i * TABLE_H/16);
 	}
 
 	/* draw vertical lines */
-	for (i = 1; i < x_cells; i++) {
+	for (unsigned int i = 1; i < x_cells; i++) {
 		cairo_move_to(cr, x_min + i * cell_width, ymin_border);
 		cairo_line_to(cr, x_min + i * cell_width, A4_HEIGHT - ymin_border);
 	}
 	cairo_stroke(cr);
 
 	/* draw glyph numbers */
+	char buf[17];
 	buf[1] = '\0';
 #define hexdigs	"0123456789ABCDEF"
 
-	for (i = 0; i < 16; i++) {
+	for (int i = 0; i < 16; i++) {
 		buf[0] = hexdigs[i];
-		layout = layout_text(cr, table_numbers_font, buf, &r);
+
+		PangoRectangle r;
+		PangoLayout *layout = layout_text(cr, table_numbers_font, buf, &r);
 		cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
 				72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
 		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -576,9 +578,11 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 		g_object_unref(layout);
 	}
 
-	for (i = 0; i < x_cells; i++) {
+	for (unsigned int i = 0; i < x_cells; i++) {
 		snprintf(buf, sizeof(buf), "%03lX", block_start / 16 + i);
-		layout = layout_text(cr, table_numbers_font, buf, &r);
+
+		PangoRectangle r;
+		PangoLayout *layout = layout_text(cr, table_numbers_font, buf, &r);
 		cairo_move_to(cr, x_min + i*cell_width + (cell_width - (double)r.width/PANGO_SCALE)/2,
 				ymin_border - 5.0);
 		pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -609,11 +613,10 @@ static void fill_empty_cell(cairo_t *cr, double x, double y, unsigned long charc
 static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 {
 	char buf[9];
-	PangoLayout *layout;
-	PangoRectangle r;
-
 	snprintf(buf, sizeof(buf), "%04lX", charcode);
-	layout = layout_text(cr, cell_numbers_font, buf, &r);
+
+	PangoRectangle r;
+	PangoLayout *layout = layout_text(cr, cell_numbers_font, buf, &r);
 	cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - cell_label_offset);
 	pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
 	g_object_unref(layout);
@@ -632,7 +635,6 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		FT_Face ft_face, const char *fontname, unsigned long *charcode,
 		const struct unicode_block *block, FT_Face ft_other_face)
 {
-	FT_UInt idx;
 	unsigned long prev_charcode;
 	unsigned long prev_cell;
 	int npages = 0;
@@ -645,20 +647,20 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 
 	if (use_pango) {
 		fc_config = FcConfigCreate();
-		FcConfigAppFontAddFile(fc_config, (FcChar8 *) font_file_name);
+		FcConfigAppFontAddFile(fc_config, (FcChar8 *)font_file_name);
 		fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
 		pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
 		context = pango_font_map_create_context(fontmap);
-		pango_cairo_update_context (cr, context);
+		pango_cairo_update_context(cr, context);
 
 		font_desc = pango_font_description_new();
-		layout = pango_layout_new (context);
+		layout = pango_layout_new(context);
 		pango_layout_set_font_description(layout, font_desc);
 		pango_layout_set_width(layout, cell_width * PANGO_SCALE);
 		pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 	}
 
-	idx = FT_Get_Char_Index(ft_face, *charcode);
+	FT_UInt idx = FT_Get_Char_Index(ft_face, *charcode);
 
 	do {
 		unsigned long offset = ((*charcode - block->start) / 0x100) * 0x100;
@@ -667,7 +669,6 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 			block->end + 1 : tbl_start + 0x100;
 		unsigned int rows = (tbl_end - tbl_start) / 16;
 		double x_min = (A4_WIDTH - rows * cell_width) / 2;
-		unsigned long i;
 		bool filled_cells[256]; /* 16x16 glyphs max */
 
 		/* XXX WARNING: not reentrant! */
@@ -680,8 +681,9 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 
 		memset(filled_cells, '\0', sizeof(filled_cells));
 
-		if (!use_pango)
+		if (!use_pango) {
 			cairo_set_scaled_font(cr, font);
+		}
 
 		/*
 		 * Fill empty cells and calculate coordinates of the glyphs.
@@ -692,14 +694,15 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 			int charpos = *charcode - tbl_start;
 
 			/* fill empty cells before the current glyph */
-			for (i = prev_cell + 1; i < *charcode; i++) {
+			for (unsigned long i = prev_cell + 1; i < *charcode; i++) {
 				int pos = i - tbl_start;
 				fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
 			}
 
 			/* if it is new glyph - highlight the cell */
-			if (ft_other_face && !FT_Get_Char_Index(ft_other_face, *charcode))
+			if (ft_other_face && !FT_Get_Char_Index(ft_other_face, *charcode)) {
 				highlight_cell(cr, CELL_X(x_min, charpos), CELL_Y(charpos));
+			}
 
 			/* For now just position glyphs. They will be shown later,
 			 * to make output more efficient. */
@@ -730,7 +733,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 		} while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
 
 		/* Fill remaining empty cells */
-		for (i = prev_cell + 1; i < tbl_end; i++) {
+		for (unsigned long i = prev_cell + 1; i < tbl_end; i++) {
 			int pos = i - tbl_start;
 			fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
 		}
@@ -747,10 +750,12 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 			}
 		}
 
-		for (i = 0; i < tbl_end - tbl_start; i++)
-			if (filled_cells[i])
+		for (unsigned long i = 0; i < tbl_end - tbl_start; i++) {
+			if (filled_cells[i]) {
 				draw_charcode(cr, CELL_X(x_min, i), CELL_Y(i),
 						i + tbl_start);
+			}
+		}
 
 		draw_grid(cr, rows, tbl_start);
 		npages++;
@@ -776,25 +781,23 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
 		const char *fontname, FT_Face ft_other_face)
 {
-	FT_ULong charcode;
-	FT_UInt idx;
-	const struct unicode_block *block;
-	int pageno = 1;
 	cairo_surface_t *surface = cairo_get_target(cr);
 
+	int pageno = 1;
 	outline(surface, 0, pageno, fontname);
 
-	charcode = get_first_char(ft_face, &idx);
+	FT_UInt idx;
+	FT_ULong charcode = get_first_char(ft_face, &idx);
 
 	while (idx) {
-		block = get_unicode_block(charcode);
+		const struct unicode_block *block = get_unicode_block(charcode);
 		if (block) {
-			int npages;
 			outline(surface, 1, pageno, block->name);
-			npages = draw_unicode_block(cr, font, ft_face, fontname,
-					&charcode, block, ft_other_face);
+			int npages = draw_unicode_block(cr, font, ft_face, fontname,
+							&charcode, block, ft_other_face);
 			pageno += npages;
 		}
+
 		charcode = get_next_char(ft_face, charcode, &idx);
 	}
 }
@@ -804,8 +807,6 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
  */
 static void usage(const char *cmd)
 {
-	const struct fntsample_style *style;
-
 	fprintf(stderr, _("Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
 			"       %s -h\n\n") , cmd, cmd);
 	fprintf(stderr, _("Options:\n"
@@ -825,8 +826,10 @@ static void usage(const char *cmd)
 			"  --include-range,     -i RANGE        Show characters in RANGE\n"
 			"  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
 			"  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"));
+
 	fprintf(stderr, _("\nSupported styles (and default values):\n"));
-	for (style = styles; style->name; style++)
+
+	for (const struct fntsample_style *style = styles; style->name; style++)
 		fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
 }
 
@@ -843,12 +846,14 @@ static const char *get_font_name(FT_Face face)
 	/* try SFNT format */
 	unsigned num_names = FT_Get_Sfnt_Name_Count(face);
 	iconv_t u16to8 = iconv_open("UTF-8", "UTF-16BE");
+
 	for (unsigned i = 0; i < num_names; i++) {
 		FT_SfntName name;
 
 		error = FT_Get_Sfnt_Name(face, i, &name);
-		if (error)
+		if (error) {
 			continue;
+		}
 
 		if (name.name_id == TT_NAME_ID_FULL_NAME &&
 		    name.platform_id == TT_PLATFORM_MICROSOFT &&
@@ -857,28 +862,30 @@ static const char *get_font_name(FT_Face face)
 			char *bufptr = fontname;
 			size_t inbytes = name.string_len;
 			size_t outbytes = name.string_len * 2;
-			if (iconv(u16to8, (char**)&name.string, &inbytes, &bufptr, &outbytes) == (size_t)-1)
+			if (iconv(u16to8, (char**)&name.string, &inbytes, &bufptr, &outbytes) == (size_t)-1) {
 				continue;
+			}
 			*bufptr = '\0';
 		}
 	}
+
 	iconv_close(u16to8);
-	if (fontname)
+
+	if (fontname) {
 		return fontname;
+	}
 
 	/* try Type1 format */
 	PS_FontInfoRec fontinfo;
 
 	error = FT_Get_PS_Font_Info(face, &fontinfo);
-	if (!error) {
-		if (fontinfo.full_name) {
-			fontname = strdup(fontinfo.full_name);
-			if (!fontname) {
-				perror("strdup");
-				exit(1);
-			}
-			return fontname;
+	if (!error && fontinfo.full_name) {
+		fontname = strdup(fontinfo.full_name);
+		if (!fontname) {
+			perror("strdup");
+			exit(1);
 		}
+		return fontname;
 	}
 
 	/* fallback */
@@ -902,7 +909,7 @@ static const char *get_font_name(FT_Face face)
 static void init_pango_fonts(void)
 {
 	/* FIXME is this correct? */
-	PangoCairoFontMap *map = (PangoCairoFontMap *) pango_cairo_font_map_get_default();
+	PangoCairoFontMap *map = (PangoCairoFontMap *)pango_cairo_font_map_get_default();
 
 	pango_cairo_font_map_set_resolution(map, 72.0);
 
@@ -935,19 +942,18 @@ static void calculate_offsets(cairo_t *cr)
 static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 {
 	cairo_font_face_t *cr_face = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
-	cairo_matrix_t font_matrix;
-	cairo_matrix_t ctm;
 	cairo_font_options_t *options = cairo_font_options_create();
-	cairo_scaled_font_t *cr_font;
-	cairo_font_extents_t extents;
-
 
 	/* First create font with size 1 and measure it */
+	cairo_matrix_t font_matrix;
 	cairo_matrix_init_identity(&font_matrix);
+	cairo_matrix_t ctm;
 	cairo_matrix_init_identity(&ctm);
+
 	/* Turn off rounding, so we can get real metrics */
 	cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF);
-	cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
+	cairo_scaled_font_t *cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
+	cairo_font_extents_t extents;
 	cairo_scaled_font_extents(cr_font, &extents);
 
 	/* Use some magic to find the best font size... */
@@ -956,11 +962,13 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 		fprintf(stderr, _("Not enough space for rendering glyphs. Make cell font smaller.\n"));
 		exit(5);
 	}
+
 	double act_size = extents.ascent + extents.descent;
 	if (act_size <= 0) {
 		fprintf(stderr, _("The font has strange metrics: ascent + descent = %g\n"), act_size);
 		exit(5);
 	}
+
 	font_scale = tgt_size / act_size;
 	if (font_scale > 1)
 		font_scale = trunc(font_scale); // just to make numbers nicer
@@ -974,6 +982,7 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 	cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
 	cairo_scaled_font_extents(cr_font, &extents);
 	glyph_baseline_offset = (tgt_size - (extents.ascent + extents.descent)) / 2 + 2 + extents.ascent;
+
 	return cr_font;
 }
 
@@ -984,41 +993,44 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
 static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 {
 #ifdef CAN_USE_CAIRO_OUTLINES
-	char buffer[25];
-	char *endptr;
-	char *source_date_epoch;
-	unsigned long long epoch;
-	time_t now;
-	struct tm *build_time;
-
-	source_date_epoch = getenv("SOURCE_DATE_EPOCH");
+	char *source_date_epoch = getenv("SOURCE_DATE_EPOCH");
 
 	if (source_date_epoch) {
+		char *endptr;
+
 		errno = 0;
-		epoch = strtoull(source_date_epoch, &endptr, 10);
+		unsigned long long epoch = strtoull(source_date_epoch, &endptr, 10);
+
 		if ((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0)) || (errno != 0 && epoch == 0)) {
 			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"),
 					strerror(errno));
 			exit(1);
 		}
+
 		if (endptr == source_date_epoch) {
 			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"),
 				endptr);
 			exit(1);
 		}
+
 		if (*endptr != '\0') {
 			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"),
 				endptr);
 			exit(1);
 		}
+
 		if (epoch > ULONG_MAX) {
 			fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"),
 				ULONG_MAX, epoch);
 			exit(1);
 		}
-		now = (time_t)epoch;
-		build_time = gmtime(&now);
+
+		time_t now = (time_t)epoch;
+		struct tm *build_time = gmtime(&now);
+
+		char buffer[25];
 		strftime(buffer, 25, "%Y-%m-%dT%H:%M:%S%z", build_time);
+
 		cairo_pdf_surface_set_metadata(surface,
 					       CAIRO_PDF_METADATA_CREATE_DATE,
 					       buffer);
@@ -1030,14 +1042,6 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 
 int main(int argc, char **argv)
 {
-	cairo_surface_t *surface;
-	cairo_t *cr;
-	FT_Error error;
-	FT_Library library;
-	FT_Face face, other_face = NULL;
-	const char *fontname; /* full name of the font */
-	cairo_status_t cr_status;
-	cairo_scaled_font_t *cr_font;
 
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, LOCALEDIR);
@@ -1045,39 +1049,48 @@ int main(int argc, char **argv)
 
 	parse_options(argc, argv);
 
-	error = FT_Init_FreeType(&library);
+	FT_Library library;
+	FT_Error error = FT_Init_FreeType(&library);
+
 	if (error) {
 		/* TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated */
 		fprintf(stderr, _("%s: freetype error\n"), argv[0]);
 		exit(3);
 	}
 
+	FT_Face face;
 	error = FT_New_Face(library, font_file_name, font_index, &face);
+
 	if (error) {
 		fprintf(stderr, _("%s: failed to open font file %s\n"), argv[0], font_file_name);
 		exit(4);
 	}
 
-	fontname = get_font_name(face);
+	const char *fontname = get_font_name(face);
+
+	FT_Face other_face = NULL;
 
 	if (other_font_file_name) {
 		error = FT_New_Face(library, other_font_file_name, other_index, &other_face);
+
 		if (error) {
 			fprintf(stderr, _("%s: failed to create new font face\n"), argv[0]);
 			exit(4);
 		}
 	}
 
-	if (postscript_output)
+	cairo_surface_t *surface;
+
+	if (postscript_output) {
 		surface = cairo_ps_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
-	else if (svg_output)
+	} else if (svg_output) {
 		surface = cairo_svg_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
-	else {
+	} else {
 		surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
 		set_repeatable_pdf_metadata(surface);
 	}
 
-	cr_status = cairo_surface_status(surface);
+	cairo_status_t cr_status = cairo_surface_status(surface);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
 		/* TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated */
 		fprintf(stderr, _("%s: failed to create cairo surface: %s\n"),
@@ -1085,7 +1098,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	cr = cairo_create(surface);
+	cairo_t *cr = cairo_create(surface);
 	cr_status = cairo_status(cr);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
 		fprintf(stderr, _("%s: cairo_create failed: %s\n"),
@@ -1097,7 +1110,8 @@ int main(int argc, char **argv)
 
 	init_pango_fonts();
 	calculate_offsets(cr);
-	cr_font = create_default_font(face);
+
+	cairo_scaled_font_t *cr_font = create_default_font(face);
 	cr_status = cairo_scaled_font_status(cr_font);
 	if (cr_status != CAIRO_STATUS_SUCCESS) {
 		fprintf(stderr, _("%s: failed to create scaled font: %s\n"),
@@ -1108,5 +1122,6 @@ int main(int argc, char **argv)
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	draw_glyphs(cr, cr_font, face, fontname, other_face);
 	cairo_destroy(cr);
+
 	return 0;
 }
