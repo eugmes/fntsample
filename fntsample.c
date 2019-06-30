@@ -42,6 +42,10 @@
 #include "unicode_blocks.h"
 #include "config.h"
 
+#if CAIRO_VERSION >= CAIRO_VERSION_ENCODE(1,15,4)
+#define CAN_USE_CAIRO_OUTLINES
+#endif
+
 #define _(str)	gettext(str)
 
 #define A4_WIDTH	(8.3*72)
@@ -367,6 +371,10 @@ static void parse_options(int argc, char * const argv[])
 			break;
 		case 'w':
 			write_outline = true;
+#ifndef CAN_USE_CAIRO_OUTLINES
+			fprintf(stderr, _("Cairo >= 1.15.4 is required for this option!\n"));
+			exit(1);
+#endif
 			break;
 		case 'i':
 		case 'x':
@@ -391,7 +399,8 @@ static void parse_options(int argc, char * const argv[])
 			no_embed = true;
 			break;
 		case 'p':
-			use_pango = true;
+			fprintf(stderr, _("Pango >= 1.37 is required for this option!\n"));
+			exit(1);
 			break;
 		case '?':
 		default:
@@ -448,6 +457,7 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
 	if (print_outline)
 		printf("%d %d %s\n", level, page, text);
 
+#ifdef CAN_USE_CAIRO_OUTLINES
 	if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
 		char *dest = NULL;
 		int len = 0;
@@ -458,6 +468,10 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
 
 		cairo_pdf_surface_add_outline(surface, level, text, dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
 	}
+#else
+	(void)surface;
+#endif
+
 }
 
 /*
@@ -969,6 +983,7 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
  */
 static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 {
+#ifdef CAN_USE_CAIRO_OUTLINES
 	char buffer[25];
 	char *endptr;
 	char *source_date_epoch;
@@ -1008,6 +1023,9 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 					       CAIRO_PDF_METADATA_CREATE_DATE,
 					       buffer);
 	}
+#else
+	(void)surface;
+#endif
 }
 
 int main(int argc, char **argv)

@@ -12,7 +12,7 @@ find_package(Gettext REQUIRED)
 find_package(Iconv REQUIRED)
 
 pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
-  cairo>=1.15.4
+  cairo
   fontconfig
   freetype2
   glib-2.0
