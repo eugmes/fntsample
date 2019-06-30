@@ -398,8 +398,7 @@ static void parse_options(int argc, char * const argv[])
 			no_embed = true;
 			break;
 		case 'p':
-			fprintf(stderr, _("Pango >= 1.37 is required for this option!\n"));
-			exit(1);
+                        use_pango = true;
 			break;
 		case '?':
 		default:
