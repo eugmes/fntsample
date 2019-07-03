@@ -39,83 +39,83 @@ use POSIX qw(:locale_h);
 use Encode qw(encode);
 
 sub usage {
-	printf __"Usage: %s input.pdf outline.txt out.pdf\n", $0;
+    printf __"Usage: %s input.pdf outline.txt out.pdf\n", $0;
 }
 
 # get first non-empty non-comment line
 sub get_line {
-	my ($F) = @_;
-	my $line;
+    my ($F) = @_;
+    my $line;
 
-	while ($line = <$F>) {
-		chomp $line;
-		# skip comments ...
-		next if $line =~ /^#/;
-		# ... and empty lines
-		next if $line eq q{};
-		last;
-	}
-	return $line;
+    while ($line = <$F>) {
+        chomp $line;
+        # skip comments ...
+        next if $line =~ /^#/;
+        # ... and empty lines
+        next if $line eq q{};
+        last;
+    }
+    return $line;
 }
 
 # Encode string to UTF-16BE with BOM if it contains non-ASCII characters
 sub encode_pdf_text {
-	my ($str) = @_;
+    my ($str) = @_;
 
-	if ($str !~ /[^[:ascii:]]/) {
-		return $str;
-	} else {
-		return encode('UTF-16', $str);
-	}
+    if ($str !~ /[^[:ascii:]]/) {
+        return $str;
+    } else {
+        return encode('UTF-16', $str);
+    }
 }
 
 sub add_outlines {
-	my ($pdf, $parent, $line, $F) = @_;
-	my $cur_outline;
+    my ($pdf, $parent, $line, $F) = @_;
+    my $cur_outline;
 
-	my ($level) = split / /, $line;
+    my ($level) = split / /, $line;
 
-	MAINLOOP: while ($line) {
-		my ($new_level, $page, $text) = split / /, $line, 3;
+    MAINLOOP: while ($line) {
+        my ($new_level, $page, $text) = split / /, $line, 3;
 
-		if ($new_level > $level) {
-			$line = add_outlines($pdf, $cur_outline, $line, $F);
-			next MAINLOOP;
-		} elsif ($new_level < $level) {
-			return $line;
-		} else {
-			$cur_outline = $parent->outline;
-			$cur_outline->title(encode_pdf_text($text));
-			# FIXME it should be posible to make it easier
-			my $pdfpage = $pdf->{pagestack}->[$page - 1];
-			$cur_outline->dest($pdfpage);
-		}
+        if ($new_level > $level) {
+            $line = add_outlines($pdf, $cur_outline, $line, $F);
+            next MAINLOOP;
+        } elsif ($new_level < $level) {
+            return $line;
+        } else {
+            $cur_outline = $parent->outline;
+            $cur_outline->title(encode_pdf_text($text));
+            # FIXME it should be posible to make it easier
+            my $pdfpage = $pdf->{pagestack}->[$page - 1];
+            $cur_outline->dest($pdfpage);
+        }
 
-		$line = get_line($F);
-	}
+        $line = get_line($F);
+    }
 }
 
 # Create new outlines object ignorig outlines that can be
 # already present in the PDF file.
 sub new_outlines {
-	my ($pdf) = @_;
+    my ($pdf) = @_;
 
-	require PDF::API2::Outlines;
-	$pdf->{'pdf'}->{'Root'}->{'Outlines'} = PDF::API2::Outlines->new($pdf);
-	my $obj = $pdf->{'pdf'}->{'Root'}->{'Outlines'};
+    require PDF::API2::Outlines;
+    $pdf->{'pdf'}->{'Root'}->{'Outlines'} = PDF::API2::Outlines->new($pdf);
+    my $obj = $pdf->{'pdf'}->{'Root'}->{'Outlines'};
 
-	$pdf->{'pdf'}->new_obj($obj) unless $obj->is_obj($pdf->{'pdf'});
-	$pdf->{'pdf'}->out_obj($obj);
-	$pdf->{'pdf'}->out_obj($pdf->{'pdf'}->{'Root'});
+    $pdf->{'pdf'}->new_obj($obj) unless $obj->is_obj($pdf->{'pdf'});
+    $pdf->{'pdf'}->out_obj($obj);
+    $pdf->{'pdf'}->out_obj($pdf->{'pdf'}->{'Root'});
 
-	return $obj;
+    return $obj;
 }
 
 setlocale(LC_ALL, q{});
 
 if ($#ARGV != 2) {
-	usage;
-	exit 1;
+    usage;
+    exit 1;
 }
 
 my ($inputfile, $outlinefile, $outputfile) = @ARGV;
@@ -123,8 +123,8 @@ my ($inputfile, $outlinefile, $outputfile) = @ARGV;
 my $pdf = PDF::API2->open($inputfile);
 
 open my $outline_fh, '<:encoding(UTF-8)', $outlinefile
-	or die __x("Cannot open outline file '{outlinefile}'",
-		outlinefile => $outlinefile);
+    or die __x("Cannot open outline file '{outlinefile}'",
+               outlinefile => $outlinefile);
 
 my $line = get_line($outline_fh);
 

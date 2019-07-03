@@ -8,9 +8,9 @@
 #include <stdlib.h>
 
 struct unicode_block {
-	unsigned long start;
-	unsigned long end;
-	const char *name;
+  unsigned long start;
+  unsigned long end;
+  const char *name;
 };
 
 extern const struct unicode_block static_unicode_blocks[];
