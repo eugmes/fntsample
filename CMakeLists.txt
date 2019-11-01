@@ -46,12 +46,12 @@ endif()
 
 string(TIMESTAMP DATE "%Y-%m-%d" UTC)
 
-configure_file(config.h.in config.h @ONLY)
+configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
 configure_file(pdf-extract-outline.1.in pdf-extract-outline.1 @ONLY)
 configure_file(pdfoutline.1.in pdfoutline.1 @ONLY)
-configure_file(pdfoutline.pl pdfoutline @ONLY)
-configure_file(pdf-extract-outline.pl pdf-extract-outline @ONLY)
+configure_file(pdfoutline.pl pdfoutline ESCAPE_QUOTES @ONLY)
+configure_file(pdf-extract-outline.pl pdf-extract-outline ESCAPE_QUOTES @ONLY)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
   COMMAND ${AWK} -f genblocks.awk ${UNICODE_BLOCKS} > ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c

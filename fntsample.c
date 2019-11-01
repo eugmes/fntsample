@@ -1034,8 +1034,8 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 int main(int argc, char **argv)
 {
     setlocale(LC_ALL, "");
-    bindtextdomain(PACKAGE, LOCALEDIR);
-    textdomain(PACKAGE);
+    bindtextdomain(CMAKE_PROJECT_NAME, CMAKE_INSTALL_FULL_LOCALEDIR);
+    textdomain(CMAKE_PROJECT_NAME);
 
     parse_options(argc, argv);
 
