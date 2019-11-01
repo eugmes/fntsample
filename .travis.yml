@@ -20,7 +20,7 @@ addons:
     - cmake
 
 script:
-- cmake -S . -B build -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
+- cmake -B build -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt .
 - cmake --build build -- VERBOSE=1
 - cd build
 - ./fntsample --help
