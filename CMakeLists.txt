@@ -85,15 +85,16 @@ target_link_libraries(fntsample PRIVATE
 target_compile_options(fntsample PRIVATE
   -Wall -W -Wwrite-strings -Wstrict-prototypes -pedantic)
 
+# TODO use improved install handling in CMake 3.14
 install(TARGETS fntsample DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/pdfoutline"
                  "${CMAKE_CURRENT_BINARY_DIR}/pdf-extract-outline"
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-install(FILES "${PROJECT_BINARY_DIR}/fntsample.1"
-              "${PROJECT_BINARY_DIR}/pdfoutline.1"
-              "${PROJECT_BINARY_DIR}/pdf-extract-outline.1"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fntsample.1"
+              "${CMAKE_CURRENT_BINARY_DIR}/pdfoutline.1"
+              "${CMAKE_CURRENT_BINARY_DIR}/pdf-extract-outline.1"
         DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 
 add_subdirectory(po)
