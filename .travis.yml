@@ -20,9 +20,10 @@ addons:
     - cmake
 
 script:
-- cmake -B build -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt .
-- cmake --build build -- VERBOSE=1
+- mkdir build
 - cd build
+- cmake -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt ..
+- make VERBOSE=1
 - ./fntsample --help
 - make DESTDIR=tmp install
 - ls -lR tmp
