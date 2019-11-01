@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.TH pdf-extract-outline 1 @DATE@
+.TH pdf-extract-outline 1 "@DATE@" "@CMAKE_PROJECT_VERSION@" "@CMAKE_PROJECT_NAME@"
 .SH NAME
 pdf-extract-outline \- extract outlines (aka bookmarks) from PDF files
 .SH SYNOPSIS
@@ -19,4 +19,4 @@ accepts no options.
 author is Eugeniy Meshcheryakov <eugen@debian.org>
 .br
 \fBpdf-extract-outline\fP is part of \fBfntsample\fP and can be downoaded from
-<https://github.com/eugmes/fntsample>.
+<@CMAKE_PROJECT_HOMEPAGE_URL@>.

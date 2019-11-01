@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.TH pdfoutline 1 @DATE@
+.TH pdfoutline 1 "@DATE@" "@CMAKE_PROJECT_VERSION@" "@CMAKE_PROJECT_NAME@"
 .SH NAME
 pdfoutline \- add outlines (aka bookmarks) to PDF files
 \" macros
@@ -60,4 +60,4 @@ Document title
 author is Eugeniy Meshcheryakov <eugen@debian.org>
 .br
 \fBpdfoutline\fP is part of \fBfntsample\fP and can be downoaded from
-<https://github.com/eugmes/fntsample>.
+<@CMAKE_PROJECT_HOMEPAGE_URL@>.

@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.12)
-project(fntsample C)
+
+project(fntsample
+  VERSION 5.3
+  DESCRIPTION "PDF and PostScript font samples generator"
+  HOMEPAGE_URL "https://github.com/eugmes/fntsample"
+  LANGUAGES C)
 
 include(CheckCCompilerFlag)
 include(GNUInstallDirs)

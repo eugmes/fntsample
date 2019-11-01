@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.TH fntsample 1 @DATE@
+.TH fntsample 1 "@DATE@" "@CMAKE_PROJECT_VERSION@" "@CMAKE_PROJECT_NAME@"
 .SH NAME
 fntsample \- PDF and PostScript font samples generator
 \" macros
@@ -30,11 +30,11 @@ into PDF (default) or PostScript file.
 supports the following options.
 .TP
 .BI "\-\-blocks\-file, \-b " BLOCKS-FILE
-Read Unicode blocks information from 
+Read Unicode blocks information from
 .IR BLOCKS-FILE .
 .TP
 .BI "\-\-font\-file, \-f " FONT-FILE
-Make samples of 
+Make samples of
 .IR FONT-FILE .
 .TP
 .BI "\-\-font\-index, \-n " IDX
@@ -43,7 +43,7 @@ Useful for files that contain multiple fonts, like TrueType Collections (.ttc).
 By default font with index 0 is used.
 .TP
 .BI "\-\-output\-file, \-o " OUTPUT-FILE
-Write output to 
+Write output to
 .IR OUTPUT-FILE .
 .TP
 .BI "\-\-other\-font\-file, \-d " OTHER-FONT
@@ -133,7 +133,7 @@ This is useful for making builds that use \fBfntsample\fP reproducible.
 fntsample \-f font.ttf \-o samples.pdf
 .ESAMPLE
 .PP
-.RI "Make PDF samples for " font.ttf ", compare it with " oldfont.ttf 
+.RI "Make PDF samples for " font.ttf ", compare it with " oldfont.ttf
 .RI "and highlight new glyphs. Write output to file " samples.pdf :
 .SAMPLE
 fntsample \-f font.ttf \-d oldfont.ttf \-o samples.pdf
@@ -153,7 +153,7 @@ pdfoutline temp.pdf outlines.txt samples.pdf
 .SH AUTHOR
 Copyright \(co 2007-2017 Eugeniy Meshcheryakov <eugen@debian.org>
 .br
-Homepage: <https://github.com/eugmes/fntsample/>
+Homepage: <@CMAKE_PROJECT_HOMEPAGE_URL@>
 .SH SEE ALSO
 .PP
 .BR pdfoutline (1)
