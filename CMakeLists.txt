@@ -1,7 +1,5 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.12)
 project(fntsample C)
-
-set(CMAKE_C_STANDARD 99)
 
 include(CheckCCompilerFlag)
 include(GNUInstallDirs)
@@ -10,6 +8,12 @@ find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
 find_package(Gettext REQUIRED)
 find_package(Iconv REQUIRED)
+
+# CMake does not create an imported target for libintl...
+add_library(Intl INTERFACE IMPORTED)
+target_include_directories(Intl INTERFACE ${Intl_INCLUDE_DIRS})
+target_link_libraries(Intl INTERFACE ${Intl_LIBRARIES})
+target_link_directories(Intl INTERFACE ${Intl_LIBRARY_DIRS})
 
 pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
   cairo
@@ -59,7 +63,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
   VERBATIM
 )
 
-set(SOURCES
+add_executable(fntsample
   fntsample.c
   read_blocks.c
   unicode_blocks.h
@@ -67,26 +71,16 @@ set(SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
-# TODO Replace with commented-out code when cmake 3.12 becomes
-# more available
-link_directories(${Intl_LIBRARY_DIRS})
-
-add_executable(fntsample ${SOURCES})
+target_compile_features(fntsample PRIVATE c_std_99)
 
 target_include_directories(fntsample PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${Intl_INCLUDE_DIRS}
 )
-
-# Requires CMake 3.12
-# target_link_directories(fntsample PRIVATE
-#   ${Intl_LIBRARY_DIRS}
-# )
 
 target_link_libraries(fntsample PRIVATE
   m
-  ${Intl_LIBRARIES}
+  Intl
   Iconv::Iconv
   PkgConfig::pkgs
 )
