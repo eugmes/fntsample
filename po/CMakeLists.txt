@@ -1,26 +1,31 @@
 set(LANGUAGES uk)
 
-add_custom_target(pofiles)
+function(process_po_file lang out_var)
+  set(po_file "${CMAKE_CURRENT_SOURCE_DIR}/${lang}.po")
+  set(gmo_file "${CMAKE_CURRENT_BINARY_DIR}/${lang}.gmo")
+  set(gmo_file_tgt "${lang}.gmo")
 
-function(process_po_files _langs)
-  foreach(_lang ${_langs})
-    set(_po_file "${CMAKE_CURRENT_SOURCE_DIR}/${_lang}.po")
-    set(_gmo_file "${CMAKE_CURRENT_BINARY_DIR}/${_lang}.gmo")
-    set(_gmo_file_tgt "${_lang}.gmo")
+  add_custom_command(OUTPUT ${gmo_file}
+    COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${po_file} -o ${gmo_file}
+    DEPENDS ${po_file}
+    COMMENT "Compiling ${lang}.po to ${lang}.gmo"
+    VERBATIM)
 
-    add_custom_command(OUTPUT ${_gmo_file}
-      COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} ${_po_file} -o ${_gmo_file}
-      DEPENDS ${_po_file}
-      COMMENT "Compiling ${_lang}.po to ${_lang}.gmo"
-      VERBATIM)
+  install(FILES ${gmo_file}
+          DESTINATION "${CMAKE_INSTALL_LOCALEDIR}/${lang}/LC_MESSAGES/"
+          RENAME "${CMAKE_PROJECT_NAME}.mo")
+  set(${out_var} ${gmo_file} PARENT_SCOPE)
+endfunction()
 
-    install(FILES ${_gmo_file}
-            DESTINATION "${CMAKE_INSTALL_LOCALEDIR}/${_lang}/LC_MESSAGES/"
-            RENAME "${CMAKE_PROJECT_NAME}.mo")
+function(process_po_files langs)
+  set(gmo_files)
 
-    add_custom_target(${_gmo_file_tgt} ALL DEPENDS ${_gmo_file})
-    add_dependencies(pofiles ${_gmo_file_tgt})
+  foreach(lang ${langs})
+    process_po_file(${lang} gmo_file)
+    list(APPEND gmo_files ${gmo_file})
   endforeach()
+
+  add_custom_target(pofiles ALL DEPENDS ${gmo_files})
 endfunction()
 
 process_po_files(${LANGUAGES})
