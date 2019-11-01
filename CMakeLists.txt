@@ -13,7 +13,6 @@ find_package(Iconv REQUIRED)
 add_library(Intl INTERFACE IMPORTED)
 target_include_directories(Intl INTERFACE ${Intl_INCLUDE_DIRS})
 target_link_libraries(Intl INTERFACE ${Intl_LIBRARIES})
-target_link_directories(Intl INTERFACE ${Intl_LIBRARY_DIRS})
 
 pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
   cairo
