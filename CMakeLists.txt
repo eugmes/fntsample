@@ -6,7 +6,6 @@ project(fntsample
   HOMEPAGE_URL "https://github.com/eugmes/fntsample"
   LANGUAGES C)
 
-include(CheckCCompilerFlag)
 include(GNUInstallDirs)
 
 find_package(PkgConfig REQUIRED)
@@ -46,12 +45,6 @@ Blocks.txt file is available at Unicode site: http://unicode.org/Public/UNIDATA/
 endif()
 
 string(TIMESTAMP DATE "%Y-%m-%d" UTC)
-
-set(CMAKE_REQUIRED_FLAGS -Wl,--as-needed)
-check_c_compiler_flag("" HAVE_AS_NEEDED) #empty because we are testing a linker flag
-if(HAVE_AS_NEEDED)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
-endif()
 
 configure_file(config.h.in config.h @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
