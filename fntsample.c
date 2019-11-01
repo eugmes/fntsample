@@ -644,7 +644,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
 
     if (use_pango) {
         fc_config = FcConfigCreate();
-        FcConfigAppFontAddFile(fc_config, (FcChar8 *)font_file_name);
+        FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
         fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
         pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
         context = pango_font_map_create_context(fontmap);
