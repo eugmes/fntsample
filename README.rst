@@ -48,7 +48,7 @@ The following libraries are required to build ``fntsample``:
 `fontconfig <https://www.fontconfig.org>`_,
 `FreeType2 <https://www.freetype.org>`_,
 `GLib <https://developer.gnome.org/glib/>`_,
-`Pango <http://www.pango.org/>`_.
+`Pango <https://pango.gnome.org/>`_.
 They should be available in most Linux distributions.
 Additionally Unicode `blocks <https://unicode.org/Public/UNIDATA/Blocks.txt>`_ file is required.
 
