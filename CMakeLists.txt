@@ -33,39 +33,8 @@ if(NOT AWK)
   message(FATAL_ERROR "awk is required to build the program but was not found.")
 endif()
 
-set(DEFAULT_UNICODE_BLOCKS_URL "https://unicode.org/Public/UNIDATA/Blocks.txt")
-set(UNICODE_BLOCKS_URL "${DEFAULT_UNICODE_BLOCKS_URL}"
-    CACHE STRING "Unicode blocks file download URL")
-
-set(UNICODE_BLOCKS UNICODE_BLOCKS-NOTFOUND CACHE FILEPATH "Unicode blocks file")
-
-if(NOT UNICODE_BLOCKS)
-  set(DOWNLOAD_DEST "${CMAKE_CURRENT_BINARY_DIR}/Blocks.txt")
-  message(STATUS "Downloading ${UNICODE_BLOCKS_URL}...")
-  file(DOWNLOAD
-       "${UNICODE_BLOCKS_URL}"
-       "${DOWNLOAD_DEST}"
-       SHOW_PROGRESS
-       STATUS status
-       TLS_VERIFY ON)
-
-  list(GET status 0 err)
-
-  if(err)
-    list(GET status 1 msg)
-    message(FATAL_ERROR "Download failed (${err}): ${msg}")
-  endif()
-
-  set(UNICODE_BLOCKS "${DOWNLOAD_DEST}"
-      CACHE FILEPATH "Unicode blocks file"
-      FORCE)
-endif()
-
-if(NOT EXISTS ${UNICODE_BLOCKS})
-  message(FATAL_ERROR "Unicode blocks file not found. "
-          "Use -DUNICODE_BLOCKS=<path> or -DUNICODE_BLOCKS_URL=<url> to specify location of this file.\n"
-          "Blocks.txt file is available at the Unicode web site: ${DEFAULT_UNICODE_BLOCKS_URL}")
-endif()
+include(CMake/DownloadUnicodeBlocks.cmake)
+download_unicode_blocks()
 
 string(TIMESTAMP DATE "%Y-%m-%d" UTC)
 
