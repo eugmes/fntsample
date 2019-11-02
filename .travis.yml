@@ -24,6 +24,6 @@ script:
 - cd build
 - cmake -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt ..
 - make VERBOSE=1
-- ./fntsample --help
+- ./src/fntsample --help
 - make DESTDIR=tmp install
 - ls -lR tmp
