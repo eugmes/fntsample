@@ -7,6 +7,7 @@ project(fntsample
   LANGUAGES C)
 
 include(GNUInstallDirs)
+include(CPack)
 
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
