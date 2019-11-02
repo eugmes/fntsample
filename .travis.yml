@@ -26,5 +26,4 @@ script:
 - make VERBOSE=1
 - ./src/fntsample --help
 - make package
-- make DESTDIR=tmp install
-- ls -lR tmp
+- tar tzf fntsample-*.tar.gz
