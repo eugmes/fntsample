@@ -110,10 +110,14 @@ static struct fntsample_style styles[] = {
     { NULL, NULL, NULL }
 };
 
-static PangoFontDescription *header_font;
-static PangoFontDescription *font_name_font;
-static PangoFontDescription *table_numbers_font;
-static PangoFontDescription *cell_numbers_font;
+struct table_fonts {
+    PangoFontDescription *header;
+    PangoFontDescription *font_name;
+    PangoFontDescription *table_numbers;
+    PangoFontDescription *cell_numbers;
+};
+
+static struct table_fonts table_fonts;
 
 static double cell_label_offset;
 static double cell_glyph_bot_offset;
@@ -471,12 +475,12 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *block_na
 {
     PangoRectangle r;
 
-    PangoLayout *layout = layout_text(cr, font_name_font, face_name, &r);
+    PangoLayout *layout = layout_text(cr, table_fonts.font_name, face_name, &r);
     cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 30.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 
-    layout = layout_text(cr, header_font, block_name, &r);
+    layout = layout_text(cr, table_fonts.header, block_name, &r);
     cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 50.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
@@ -553,7 +557,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
         buf[0] = hexdigs[i];
 
         PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_numbers_font, buf, &r);
+        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
         cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
                       72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -567,7 +571,7 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
         snprintf(buf, sizeof(buf), "%03lX", block_start / 16 + i);
 
         PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_numbers_font, buf, &r);
+        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
         cairo_move_to(cr, x_min + i*cell_width + (cell_width - (double)r.width/PANGO_SCALE)/2,
                       ymin_border - 5.0);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -601,7 +605,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
     snprintf(buf, sizeof(buf), "%04lX", charcode);
 
     PangoRectangle r;
-    PangoLayout *layout = layout_text(cr, cell_numbers_font, buf, &r);
+    PangoLayout *layout = layout_text(cr, table_fonts.cell_numbers, buf, &r);
     cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - cell_label_offset);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
@@ -885,17 +889,17 @@ static const char *get_font_name(FT_Face face)
 /*
  * Initialize fonts used to print table heders and character codes.
  */
-static void init_pango_fonts(void)
+static void init_table_fonts(void)
 {
     /* FIXME is this correct? */
     PangoCairoFontMap *map = (PangoCairoFontMap *)pango_cairo_font_map_get_default();
 
     pango_cairo_font_map_set_resolution(map, 72.0);
 
-    header_font = pango_font_description_from_string(get_style("header-font"));
-    font_name_font = pango_font_description_from_string(get_style("font-name-font"));
-    table_numbers_font = pango_font_description_from_string(get_style("table-numbers-font"));
-    cell_numbers_font = pango_font_description_from_string(get_style("cell-numbers-font"));
+    table_fonts.header = pango_font_description_from_string(get_style("header-font"));
+    table_fonts.font_name = pango_font_description_from_string(get_style("font-name-font"));
+    table_fonts.table_numbers = pango_font_description_from_string(get_style("table-numbers-font"));
+    table_fonts.cell_numbers = pango_font_description_from_string(get_style("cell-numbers-font"));
 }
 
 /*
@@ -905,7 +909,7 @@ static void calculate_offsets(cairo_t *cr)
 {
     PangoRectangle extents;
     /* Assume that vertical extents does not depend on actual text */
-    PangoLayout *l = layout_text(cr, cell_numbers_font, "0123456789ABCDEF", &extents);
+    PangoLayout *l = layout_text(cr, table_fonts.cell_numbers, "0123456789ABCDEF", &extents);
     g_object_unref(l);
     /* Unsolved mistery of pango's font metrics.... */
     double digits_ascent = pango_units_to_double(PANGO_DESCENT(extents));
@@ -1082,7 +1086,7 @@ int main(int argc, char **argv)
 
     cairo_surface_destroy(surface);
 
-    init_pango_fonts();
+    init_table_fonts();
     calculate_offsets(cr);
 
     cairo_scaled_font_t *cr_font = create_default_font(face);
