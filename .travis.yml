@@ -1,6 +1,5 @@
 language: c
 dist: bionic
-osx_image: xcode11.2
 
 os:
 - linux
