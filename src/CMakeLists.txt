@@ -32,7 +32,9 @@ target_link_libraries(fntsample PRIVATE
 )
 
 target_compile_options(fntsample PRIVATE
-  -Wall -W -Wwrite-strings -Wstrict-prototypes -pedantic)
+  -Wcast-align -Werror-implicit-function-declaration -Wchar-subscripts
+  -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security
+  -Wmissing-format-attribute -fno-common -Wundef)
 
 # TODO use improved install handling in CMake 3.14
 install(TARGETS fntsample DESTINATION ${CMAKE_INSTALL_BINDIR})
