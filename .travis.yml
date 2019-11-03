@@ -1,16 +1,24 @@
 language: c
+dist: bionic
 
-jobs:
-  include:
-  - os: linux
-    env: UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
-    dist: bionic
-  - os: osx
-    env: UNICODE_BLOCKS_ARG=
+os:
+- linux
+- osx
+
+env:
+- UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
+- UNICODE_BLOCKS_ARG=
 
 compiler:
 - gcc
 - clang
+
+jobs:
+  exclude:
+  - os: linux
+    env: UNICODE_BLOCKS_ARG=
+  - os: osx
+    env: UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
 
 addons:
   apt:
