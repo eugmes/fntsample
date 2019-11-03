@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fntsample\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2017-10-22 01:32+0200\n"
+"POT-Creation-Date: 2019-11-03 01:14+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,47 +16,42 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: fntsample.c:331
+#: src/fntsample.c:327
 #, c-format
 msgid "Unicode blocks file should be given at most once!\n"
 msgstr ""
 
-#: fntsample.c:337
+#: src/fntsample.c:333
 #, c-format
 msgid "Failed to load any blocks from the blocks file!\n"
 msgstr ""
 
-#: fntsample.c:343 fntsample.c:361
+#: src/fntsample.c:339 src/fntsample.c:357
 #, c-format
 msgid "Font file name should be given only once!\n"
 msgstr ""
 
-#: fntsample.c:350
+#: src/fntsample.c:346
 #, c-format
 msgid "Output file name should be given only once!\n"
 msgstr ""
 
-#: fntsample.c:378
+#: src/fntsample.c:374
 #, c-format
 msgid "Cairo >= 1.15.4 is required for this option!\n"
 msgstr ""
 
-#: fntsample.c:408
-#, c-format
-msgid "Pango >= 1.37 is required for this option!\n"
-msgstr ""
-
-#: fntsample.c:424
+#: src/fntsample.c:417
 #, c-format
 msgid "Font index should be non-negative!\n"
 msgstr ""
 
-#: fntsample.c:428
+#: src/fntsample.c:422
 #, c-format
 msgid "-s and -g cannot be used together!\n"
 msgstr ""
 
-#: fntsample.c:825
+#: src/fntsample.c:800
 #, c-format
 msgid ""
 "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
@@ -64,7 +59,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: fntsample.c:827
+#: src/fntsample.c:802
 #, c-format
 msgid ""
 "Options:\n"
@@ -93,61 +88,90 @@ msgid ""
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
 msgstr ""
 
-#: fntsample.c:844
+#: src/fntsample.c:820
 #, c-format
 msgid ""
 "\n"
 "Supported styles (and default values):\n"
 msgstr ""
 
-#: fntsample.c:972
+#: src/fntsample.c:953
 #, c-format
 msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
 msgstr ""
 
-#: fntsample.c:977
+#: src/fntsample.c:959
 #, c-format
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr ""
 
+#: src/fntsample.c:996
+#, c-format
+msgid "Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"
+msgstr ""
+
+#: src/fntsample.c:1002
+#, c-format
+msgid "Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"
+msgstr ""
+
+#: src/fntsample.c:1008
+#, c-format
+msgid "Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"
+msgstr ""
+
+#: src/fntsample.c:1014
+#, c-format
+msgid "Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"
+msgstr ""
+
 #. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
-#: fntsample.c:1016
+#: src/fntsample.c:1047
 #, c-format
 msgid "%s: freetype error\n"
 msgstr ""
 
-#: fntsample.c:1022
+#: src/fntsample.c:1055
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr ""
 
-#: fntsample.c:1031
+#: src/fntsample.c:1067
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr ""
 
 #. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
-#: fntsample.c:1046
+#: src/fntsample.c:1086
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr ""
 
-#: fntsample.c:1054
+#: src/fntsample.c:1094
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
 msgstr ""
 
-#: fntsample.c:1066
+#: src/fntsample.c:1107
 #, c-format
 msgid "%s: failed to create scaled font: %s\n"
 msgstr ""
 
-#: pdfoutline.pl:41
+#: scripts/pdfoutline.pl:42
 #, perl-format
 msgid "Usage: %s input.pdf outline.txt out.pdf\n"
 msgstr ""
 
-#: pdfoutline.pl:102
+#: scripts/pdfoutline.pl:126 scripts/pdf-extract-outline.pl:174
 #, perl-brace-format
 msgid "Cannot open outline file '{outlinefile}'"
+msgstr ""
+
+#: scripts/pdf-extract-outline.pl:48
+#, perl-format
+msgid "Usage: %s input.pdf outline.txt\n"
+msgstr ""
+
+#: scripts/pdf-extract-outline.pl:181
+msgid "Extracting outlines from encrypted files is not supported"
 msgstr ""
