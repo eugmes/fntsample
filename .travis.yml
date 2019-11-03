@@ -45,6 +45,9 @@ addons:
     - glib
     update: true
 
+before_script:
+- if [ $TRAVIS_OS_NAME = osx ]; then brew link gettext --force; fi
+
 script:
 - mkdir build
 - cd build
