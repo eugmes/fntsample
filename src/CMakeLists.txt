@@ -3,7 +3,7 @@ configure_file(fntsample.1.in fntsample.1 @ONLY)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
-  COMMAND ${AWK} -f genblocks.awk ${UNICODE_BLOCKS} > ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
+  COMMAND "${AWK_EXECUTABLE}" -f genblocks.awk ${UNICODE_BLOCKS} > ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
   DEPENDS ${UNICODE_BLOCKS} genblocks.awk
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM

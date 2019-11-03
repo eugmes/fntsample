@@ -14,6 +14,7 @@ include(CPack)
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
 find_package(Iconv REQUIRED)
+find_package(Awk REQUIRED)
 
 # CMake does not create an imported target for libintl...
 add_library(Intl INTERFACE IMPORTED GLOBAL)
@@ -28,11 +29,6 @@ pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
   pangocairo>=1.37.0
   pangoft2>=1.37.0
 )
-
-find_program(AWK NAMES gawk awk mawk)
-if(NOT AWK)
-  message(FATAL_ERROR "awk is required to build the program but was not found.")
-endif()
 
 include(DownloadUnicodeBlocks)
 
