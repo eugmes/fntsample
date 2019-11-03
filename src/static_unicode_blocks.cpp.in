@@ -1,4 +1,5 @@
 #include "static_unicode_blocks.h"
+#include <cassert>
 
 using namespace std;
 
@@ -34,7 +35,7 @@ ssize_t static_unicode_blocks::find(uint32_t codepoint) const
 
 unicode_blocks::block static_unicode_blocks::operator[](size_t index) const
 {
-    assert(index >= 0 && index <= @BLOCKS_SIZE@);
+    assert(index <= @BLOCKS_SIZE@);
     const raw_block *b = &raw_blocks[index];
     return block{b->start, b->end, b->name};
 }
