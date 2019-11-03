@@ -32,10 +32,17 @@ addons:
     - libpango1.0-dev
     - gettext
     - cmake
-
-before_install:
-- if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
-- if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install cmake pkg-config gettext cairo pango fontconfig freetype glib; fi
+  homebrew:
+    packages:
+    - cmake
+    - pkg-config
+    - gettext
+    - cairo
+    - pango
+    - fontconfig
+    - freetype
+    - glib
+    update: true
 
 script:
 - mkdir build
