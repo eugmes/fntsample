@@ -6,12 +6,13 @@ project(fntsample
   HOMEPAGE_URL "https://github.com/eugmes/fntsample"
   LANGUAGES C)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
+
 include(GNUInstallDirs)
 include(CPack)
 
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
-find_package(Gettext REQUIRED)
 find_package(Iconv REQUIRED)
 
 # CMake does not create an imported target for libintl...
@@ -33,10 +34,13 @@ if(NOT AWK)
   message(FATAL_ERROR "awk is required to build the program but was not found.")
 endif()
 
-include(CMake/DownloadUnicodeBlocks.cmake)
+include(DownloadUnicodeBlocks)
+
 download_unicode_blocks()
 
 string(TIMESTAMP DATE "%Y-%m-%d" UTC)
+
+include(PoFileUtils)
 
 add_subdirectory(src)
 add_subdirectory(scripts)

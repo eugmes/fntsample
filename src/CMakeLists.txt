@@ -15,6 +15,8 @@ add_executable(fntsample
   ${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.c
 )
 
+add_translatable_sources(fntsample.c read_blocks.c)
+
 target_compile_features(fntsample PRIVATE c_std_99)
 
 target_include_directories(fntsample PRIVATE

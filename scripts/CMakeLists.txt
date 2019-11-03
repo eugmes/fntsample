@@ -3,6 +3,8 @@ configure_file(pdfoutline.1.in pdfoutline.1 @ONLY)
 configure_file(pdfoutline.pl pdfoutline ESCAPE_QUOTES @ONLY)
 configure_file(pdf-extract-outline.pl pdf-extract-outline ESCAPE_QUOTES @ONLY)
 
+add_translatable_sources(pdfoutline.pl pdf-extract-outline.pl)
+
 install(
   PROGRAMS
     "${CMAKE_CURRENT_BINARY_DIR}/pdfoutline"
