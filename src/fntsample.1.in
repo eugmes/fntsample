@@ -71,7 +71,7 @@ Print document outlines data to standard output.
 This data can be used to add outlines (aka bookmarks) to resulting PDF file with \fBpdfoutline\fP program.
 .TP
 .BI "\-\-write\-outline, \-w"
-Write document outlines directly (only in PDF output), requires \fBcairo\fP >= 1.15.4.
+Write document outlines directly (only in PDF output).
 .TP
 .BI "\-\-use\-pango, \-p"
 Use Pango for drawing glyph cells.

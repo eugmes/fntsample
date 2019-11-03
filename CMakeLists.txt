@@ -21,7 +21,7 @@ target_include_directories(Intl INTERFACE ${Intl_INCLUDE_DIRS})
 target_link_libraries(Intl INTERFACE ${Intl_LIBRARIES})
 
 pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
-  cairo
+  cairo>=1.15.4
   fontconfig
   freetype2
   glib-2.0

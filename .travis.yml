@@ -1,5 +1,4 @@
-sudo: false
-dist: xenial
+dist: bionic
 language: c
 
 compiler:
