@@ -223,7 +223,7 @@ static int add_range(char *range, bool include)
         return -1;
     }
 
-    struct range *r = malloc(sizeof(*r));
+    struct range *r = (struct range *)malloc(sizeof(*r));
     if (!r) {
         return -1;
     }
@@ -458,7 +458,7 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
 
     if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
         int len = snprintf(0, 0, "page=%d", page);
-        char *dest = malloc(len + 1);
+        char *dest = (char *)malloc(len + 1);
         sprintf(dest, "page=%d", page);
 
         /* FIXME passing level here is not correct. */
@@ -841,7 +841,7 @@ static const char *get_font_name(FT_Face face)
         if (name.name_id == TT_NAME_ID_FULL_NAME &&
             name.platform_id == TT_PLATFORM_MICROSOFT &&
             name.encoding_id == TT_MS_ID_UNICODE_CS) {
-            fontname = malloc(name.string_len * 2 + 1);
+            fontname = (char *)malloc(name.string_len * 2 + 1);
             char *bufptr = fontname;
             size_t inbytes = name.string_len;
             size_t outbytes = name.string_len * 2;
@@ -876,7 +876,7 @@ static const char *get_font_name(FT_Face face)
     const char *style_name = face->style_name ? face->style_name : "";
     size_t len = strlen(family_name) + strlen(style_name) + 1/* for space */;
 
-    fontname = malloc(len + 1);
+    fontname = (char *)malloc(len + 1);
     if (!fontname) {
         perror("malloc");
         exit(1);

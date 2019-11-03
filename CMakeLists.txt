@@ -4,7 +4,7 @@ project(fntsample
   VERSION 5.3
   DESCRIPTION "PDF and PostScript font samples generator"
   HOMEPAGE_URL "https://github.com/eugmes/fntsample"
-  LANGUAGES C)
+  LANGUAGES CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
