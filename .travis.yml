@@ -1,5 +1,12 @@
-dist: bionic
 language: c
+
+jobs:
+  include:
+  - os: linux
+    env: UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
+    dist: bionic
+  - os: osx
+    env: UNICODE_BLOCKS_ARG=
 
 compiler:
 - gcc
@@ -18,10 +25,14 @@ addons:
     - gettext
     - cmake
 
+before_install:
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; fi
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install cmake pkg-config gettext cairo pango fontconfig freetype glib; fi
+
 script:
 - mkdir build
 - cd build
-- cmake -DCMAKE_BUILD_TYPE=Release -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt ..
+- cmake -DCMAKE_BUILD_TYPE=Release ${UNICODE_BLOCKS_ARG} ..
 - make VERBOSE=1
 - ./src/fntsample --help
 - make package
