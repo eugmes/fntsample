@@ -13,30 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UNICODE_BLOCKS_H
-#define UNICODE_BLOCKS_H
+#ifndef STATIC_UNICODE_BLOCKS_H
+#define STATIC_UNICODE_BLOCKS_H
 
-#include <string>
+#include "unicode_blocks.h"
 
-class unicode_blocks {
+class static_unicode_blocks: public unicode_blocks {
 public:
-    class block {
-    public:
-        uint32_t start;
-        uint32_t end;
-        std::string name;
+    ~static_unicode_blocks() override;
 
-        bool contains(uint32_t codepoint) const
-        {
-            return start <= codepoint && codepoint <= end;
-        }
-    };
-
-    virtual ~unicode_blocks();
-
-    virtual size_t size() const = 0;
-    virtual ssize_t find(uint32_t codepoint) const = 0;
-    virtual block operator[](size_t index) const = 0;
+    size_t size() const override;
+    ssize_t find(uint32_t codepoint) const override;
+    block operator[](size_t index) const override;
 };
 
 #endif

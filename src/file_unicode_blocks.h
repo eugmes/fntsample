@@ -13,30 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef UNICODE_BLOCKS_H
-#define UNICODE_BLOCKS_H
+#ifndef FILE_UNICODE_BLOCKS
+#define FILE_UNICODE_BLOCKS
+#include "unicode_blocks.h"
+#include <iostream>
+#include <vector>
 
-#include <string>
-
-class unicode_blocks {
+/**
+ * Unicode blocks loadable from a file.
+ */
+class file_unicode_blocks: public unicode_blocks {
 public:
-    class block {
-    public:
-        uint32_t start;
-        uint32_t end;
-        std::string name;
+    explicit file_unicode_blocks(std::istream &stream);
+    ~file_unicode_blocks() override;
 
-        bool contains(uint32_t codepoint) const
-        {
-            return start <= codepoint && codepoint <= end;
-        }
-    };
+    size_t size() const override;
+    ssize_t find(uint32_t codepoint) const override;
+    block operator[](size_t index) const override;
 
-    virtual ~unicode_blocks();
-
-    virtual size_t size() const = 0;
-    virtual ssize_t find(uint32_t codepoint) const = 0;
-    virtual block operator[](size_t index) const = 0;
+private:
+    std::vector<block> m_blocks;
 };
 
 #endif

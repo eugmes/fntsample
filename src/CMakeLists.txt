@@ -1,19 +1,27 @@
 configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
 
-set(unicode_blocks_table "${CMAKE_CURRENT_BINARY_DIR}/unicode_blocks.cpp")
+add_executable(gen-unicode-blocks EXCLUDE_FROM_ALL
+    unicode_blocks.cpp
+    file_unicode_blocks.cpp
+    gen_unicode_blocks.cpp)
+
+target_compile_features(gen-unicode-blocks PRIVATE cxx_std_11)
+
+set(unicode_blocks_table "${CMAKE_CURRENT_BINARY_DIR}/static_unicode_blocks.cpp")
 
 add_custom_command(
   OUTPUT "${unicode_blocks_table}"
-  COMMAND "${AWK_EXECUTABLE}" -f genblocks.awk "${UNICODE_BLOCKS}" > "${unicode_blocks_table}"
-  DEPENDS "${UNICODE_BLOCKS}" genblocks.awk
+  COMMAND "$<TARGET_FILE:gen-unicode-blocks>" static_unicode_blocks.cpp.in "${UNICODE_BLOCKS}" > "${unicode_blocks_table}"
+  DEPENDS static_unicode_blocks.cpp.in "${UNICODE_BLOCKS}" gen-unicode-blocks
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM
 )
 
 add_executable(fntsample
   fntsample.cpp
-  read_blocks.cpp
+  unicode_blocks.cpp
+  file_unicode_blocks.cpp
   "${unicode_blocks_table}"
 )
 

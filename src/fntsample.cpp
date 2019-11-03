@@ -1,4 +1,4 @@
-/* Copyright © 2007-2010 Євгеній Мещеряков <eugen@debian.org>
+/* Copyright © 2007-2019 Євгеній Мещеряков <eugen@debian.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,8 +39,14 @@
 #include <locale.h>
 #include <iconv.h>
 
-#include "unicode_blocks.h"
+#include <iostream>
+#include <fstream>
+
+#include "file_unicode_blocks.h"
+#include "static_unicode_blocks.h"
 #include "config.h"
+
+using namespace std;
 
 #define _(str)	gettext(str)
 
@@ -124,7 +130,7 @@ static double cell_glyph_bot_offset;
 static double glyph_baseline_offset;
 static double font_scale;
 
-static const struct unicode_block *unicode_blocks;
+static unicode_blocks *unicode_blocks = nullptr;
 
 static void usage(const char *);
 
@@ -311,10 +317,20 @@ static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const
     return layout;
 }
 
+static void load_blocks(const char *file_name)
+{
+    ifstream blocks_file(file_name);
+    unicode_blocks = new file_unicode_blocks(blocks_file);
+    // TODO handle errors
+    //if (n == 0) {
+    //    fprintf(stderr, _("Failed to load any blocks from the blocks file!\n"));
+    //    exit(6);
+    //}
+}
+
 static void parse_options(int argc, char * const argv[])
 {
     for (;;) {
-        int n;
         int c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
 
         if (c == -1) {
@@ -328,11 +344,7 @@ static void parse_options(int argc, char * const argv[])
                 exit(1);
             }
 
-            unicode_blocks = read_blocks(optarg, &n);
-            if (n == 0) {
-                fprintf(stderr, _("Failed to load any blocks from the blocks file!\n"));
-                exit(6);
-            }
+            load_blocks(optarg);
             break;
         case 'f':
             if (font_file_name) {
@@ -420,40 +432,17 @@ static void parse_options(int argc, char * const argv[])
     }
 
     if (!unicode_blocks) {
-        unicode_blocks = static_unicode_blocks;
+        unicode_blocks = new static_unicode_blocks();
     }
-}
-
-/*
- * Locate unicode block that contains given character code.
- * Returns this block or NULL if not found.
- */
-static const struct unicode_block *get_unicode_block(unsigned long charcode)
-{
-    for (const struct unicode_block *block = unicode_blocks; block->name; block++) {
-        if ((charcode >= block->start) && (charcode <= block->end)) {
-            return block;
-        }
-    }
-
-    return NULL;
-}
-
-/*
- * Check if the given character code belongs to the given Unicode block.
- */
-static bool is_in_block(unsigned long charcode, const struct unicode_block *block)
-{
-    return ((charcode >= block->start) && (charcode <= block->end));
 }
 
 /*
  * Format and print/write outline information, if requested by the user.
  */
-static void outline(cairo_surface_t *surface, int level, int page, const char *text)
+static void outline(cairo_surface_t *surface, int level, int page, const string &text)
 {
     if (print_outline) {
-        printf("%d %d %s\n", level, page, text);
+        cout << level << " " << page << " " << text << endl;
     }
 
     if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
@@ -462,7 +451,7 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
         sprintf(dest, "page=%d", page);
 
         /* FIXME passing level here is not correct. */
-        cairo_pdf_surface_add_outline(surface, level, text, dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
+        cairo_pdf_surface_add_outline(surface, level, text.c_str(), dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
         free(dest);
     }
 }
@@ -471,7 +460,7 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
  * Draw header of a page.
  * Header shows font name and current Unicode block.
  */
-static void draw_header(cairo_t *cr, const char *face_name, const char *block_name)
+static void draw_header(cairo_t *cr, const char *face_name, const string &block_name)
 {
     PangoRectangle r;
 
@@ -480,7 +469,7 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *block_na
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 
-    layout = layout_text(cr, table_fonts.header, block_name, &r);
+    layout = layout_text(cr, table_fonts.header, block_name.c_str(), &r);
     cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 50.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
@@ -622,7 +611,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  */
 static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
                               FT_Face ft_face, const char *fontname, unsigned long *charcode,
-                              const struct unicode_block *block, FT_Face ft_other_face)
+                              const unicode_blocks::block &block, FT_Face ft_other_face)
 {
     unsigned long prev_charcode;
     unsigned long prev_cell;
@@ -654,16 +643,16 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
     FT_UInt idx = FT_Get_Char_Index(ft_face, *charcode);
 
     do {
-        unsigned long offset = ((*charcode - block->start) / 0x100) * 0x100;
-        unsigned long tbl_start = block->start + offset;
-        unsigned long tbl_end = tbl_start + 0xFF > block->end ?
-            block->end + 1 : tbl_start + 0x100;
+        unsigned long offset = ((*charcode - block.start) / 0x100) * 0x100;
+        unsigned long tbl_start = block.start + offset;
+        unsigned long tbl_end = tbl_start + 0xFF > block.end ?
+            block.end + 1 : tbl_start + 0x100;
         unsigned int rows = (tbl_end - tbl_start) / 16;
         double x_min = (A4_WIDTH - rows * cell_width) / 2;
         bool filled_cells[256]; /* 16x16 glyphs max */
 
         cairo_save(cr);
-        draw_header(cr, fontname, block->name);
+        draw_header(cr, fontname, block.name);
         prev_cell = tbl_start - 1;
 
         memset(filled_cells, '\0', sizeof(filled_cells));
@@ -720,7 +709,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
             prev_charcode = *charcode;
             prev_cell = *charcode;
             *charcode = get_next_char(ft_face, *charcode, &idx);
-        } while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
+        } while (idx && (*charcode < tbl_end) && block.contains(*charcode));
 
         /* Fill remaining empty cells */
         for (unsigned long i = prev_cell + 1; i < tbl_end; i++) {
@@ -743,7 +732,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
         npages++;
         cairo_show_page(cr);
         cairo_restore(cr);
-    } while (idx && is_in_block(*charcode, block));
+    } while (idx && block.contains(*charcode));
 
     if (use_pango) {
         g_object_unref(layout);
@@ -772,9 +761,10 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
     FT_ULong charcode = get_first_char(ft_face, &idx);
 
     while (idx) {
-        const struct unicode_block *block = get_unicode_block(charcode);
-        if (block) {
-            outline(surface, 1, pageno, block->name);
+        auto block_idx = unicode_blocks->find(charcode);
+        if (block_idx != -1) {
+            const unicode_blocks::block block = (*unicode_blocks)[block_idx];
+            outline(surface, 1, pageno, block.name);
             int npages = draw_unicode_block(cr, font, ft_face, fontname,
                                             &charcode, block, ft_other_face);
             pageno += npages;
