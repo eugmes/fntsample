@@ -649,13 +649,11 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
             block.end + 1 : tbl_start + 0x100;
         unsigned int rows = (tbl_end - tbl_start) / 16;
         double x_min = (A4_WIDTH - rows * cell_width) / 2;
-        bool filled_cells[256]; /* 16x16 glyphs max */
+        bitset<256> filled_cells; /* 16x16 glyphs max */
 
         cairo_save(cr);
         draw_header(cr, fontname, block.name);
         prev_cell = tbl_start - 1;
-
-        memset(filled_cells, '\0', sizeof(filled_cells));
 
         /*
          * Fill empty cells and calculate coordinates of the glyphs.
@@ -704,7 +702,7 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
                 }
             }
 
-            filled_cells[charpos] = true;
+            filled_cells.set(charpos);
 
             prev_charcode = *charcode;
             prev_cell = *charcode;
