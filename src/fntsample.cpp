@@ -834,9 +834,12 @@ static const char *get_font_name(FT_Face face)
             size_t inbytes = name.string_len;
             size_t outbytes = name.string_len * 2;
             if (iconv(u16to8, (char**)&name.string, &inbytes, &bufptr, &outbytes) == (size_t)-1) {
+                free(fontname);
+                fontname = NULL;
                 continue;
             }
             *bufptr = '\0';
+            break;
         }
     }
 
