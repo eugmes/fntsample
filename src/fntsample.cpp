@@ -41,6 +41,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <bitset>
 
 #include "file_unicode_blocks.h"
 #include "static_unicode_blocks.h"
