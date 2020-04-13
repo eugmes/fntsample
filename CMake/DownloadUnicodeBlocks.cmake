@@ -1,6 +1,7 @@
 function(download_unicode_blocks)
   set(default_url "https://unicode.org/Public/UNIDATA/Blocks.txt")
   set(UNICODE_BLOCKS "UNICODE_BLOCKS-NOTFOUND" CACHE FILEPATH "Unicode blocks file")
+  set(CHECK_UNICODE_CERT ON CACHE BOOL "Check certificate while downloading Unicode blocks file")
 
   if(NOT UNICODE_BLOCKS_URL)
     set(UNICODE_BLOCKS_URL "${default_url}")
@@ -14,7 +15,7 @@ function(download_unicode_blocks)
          "${download_dest}"
          SHOW_PROGRESS
          STATUS status
-         TLS_VERIFY ON)
+       TLS_VERIFY ${CHECK_UNICODE_CERT})
 
     list(GET status 0 err)
 
