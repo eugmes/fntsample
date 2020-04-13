@@ -45,9 +45,12 @@ addons:
 
 before_script:
 - '
-if [ $TRAVIS_OS_NAME = osx ];
-  export PATH="/usr/local/opt/gettext/bin:$PATH" LDFLAGS="-L/usr/local/opt/gettext/lib" CPPFLAGS="-I/usr/local/opt/gettext/include";
-fi'
+if [ $TRAVIS_OS_NAME = osx ]; then
+  export PATH="/usr/local/opt/gettext/bin:$PATH" ;
+  export LDFLAGS="-L/usr/local/opt/gettext/lib $LDFLAGS" ;
+  export CPPFLAGS="-I/usr/local/opt/gettext/include $CPPFLAGS" ;
+fi
+'
 
 script:
 - mkdir build
