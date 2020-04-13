@@ -48,7 +48,8 @@ The following libraries are required to build ``fntsample``:
 `fontconfig <https://www.fontconfig.org>`_,
 `FreeType2 <https://www.freetype.org>`_,
 `GLib <https://developer.gnome.org/glib/>`_,
-`Pango <https://pango.gnome.org/>`_.
+`Pango <https://pango.gnome.org/>`_,
+`gettext <https://www.gnu.org/software/gettext/>`_.
 They should be available in most Linux distributions.
 Additionally Unicode `blocks <https://unicode.org/Public/UNIDATA/Blocks.txt>`_ file is required.
 
@@ -62,6 +63,18 @@ Additionally Unicode `blocks <https://unicode.org/Public/UNIDATA/Blocks.txt>`_ f
 
 The last step will install files under ``/usr/local`` by default. This can be overridden by adding
 ``-DCMAKE_INSTALL_PREFIX=/another/prefix`` to the ``cmake`` invocation.
+
+``fntsample`` could be built using `Homebrew <https://brew.sh>`_ on macOS.
+Use the following commands to install dependencies and configure the build
+environment before building the code::
+
+    % brew install cmake pgk-config gettext cairo pango fontconfig freetype glib
+    % export CMAKE_PREFIX_PATH=/usr/local/opt/gettext
+
+Alternatively you can install ``fntsample`` using a Homebrew
+`formula <https://github.com/eugmes/homebrew-fntsample>`_::
+
+    % brew install eugmes/fntsample/fntsample
 
 Usage
 -----
