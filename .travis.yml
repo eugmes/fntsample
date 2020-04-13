@@ -5,20 +5,9 @@ os:
 - linux
 - osx
 
-env:
-- UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
-- UNICODE_BLOCKS_ARG=
-
 compiler:
 - gcc
 - clang
-
-jobs:
-  exclude:
-  - os: linux
-    env: UNICODE_BLOCKS_ARG=
-  - os: osx
-    env: UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
 
 addons:
   apt:
@@ -47,6 +36,9 @@ before_script:
 - '
 if [ $TRAVIS_OS_NAME = osx ]; then
   export CMAKE_PREFIX_PATH="/usr/local/opt/gettext" ;
+  export UNICODE_BLOCKS_ARG=-DCHECK_UNICODE_CERT=OFF ;
+else
+  export UNICODE_BLOCKS_ARG=-DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt ;
 fi
 '
 
