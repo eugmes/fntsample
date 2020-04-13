@@ -13,6 +13,7 @@ add_custom_command(
   COMMAND "$<TARGET_FILE:gen-unicode-blocks>" "${UNICODE_BLOCKS}" "${CMAKE_CURRENT_BINARY_DIR}/static_unicode_blocks.c"
   DEPENDS ${UNICODE_BLOCKS} gen-unicode-blocks
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  VERBATIM
 )
 
 add_executable(fntsample
