@@ -23,7 +23,6 @@ jobs:
 addons:
   apt:
     packages:
-    - gawk
     - libcairo2-dev
     - unicode-data
     - libglib2.0-dev

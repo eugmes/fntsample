@@ -40,6 +40,7 @@
 #include <iconv.h>
 
 #include "unicode_blocks.h"
+#include "static_unicode_blocks.h"
 #include "config.h"
 
 #define _(str)	gettext(str)
