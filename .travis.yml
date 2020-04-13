@@ -44,7 +44,10 @@ addons:
     update: true
 
 before_script:
-- if [ $TRAVIS_OS_NAME = osx ]; then brew link gettext --force; fi
+- '
+if [ $TRAVIS_OS_NAME = osx ];
+  export PATH="/usr/local/opt/gettext/bin:$PATH" LDFLAGS="-L/usr/local/opt/gettext/lib" CPPFLAGS="-I/usr/local/opt/gettext/include";
+fi'
 
 script:
 - mkdir build
