@@ -72,7 +72,7 @@ static struct option longopts[] = {
     {"font-index", 1, 0, 'n'},
     {"other-index", 1, 0, 'm'},
     {"no-embed", 0, 0, 'e'},
-    {"use-pango", 0, 0, 'p'},
+    {"use-pango", 0, 0, 'p'}, /* For compatibility with version <= 5.3 */
     {0, 0, 0, 0}
 };
 
@@ -91,7 +91,6 @@ static bool svg_output;
 static bool print_outline;
 static bool write_outline;
 static bool no_embed;
-static bool use_pango;
 static struct range *ranges;
 static struct range *last_range;
 static int font_index;
@@ -395,7 +394,7 @@ static void parse_options(int argc, char * const argv[])
             no_embed = true;
             break;
         case 'p':
-            use_pango = true;
+            /* Ignored for compatibility */
             break;
         case '?':
         default:
@@ -498,23 +497,6 @@ static void highlight_cell(cairo_t *cr, double x, double y)
     cairo_rectangle(cr, x, y, cell_width, cell_height);
     cairo_fill(cr);
     cairo_restore(cr);
-}
-
-/*
- * Try to place glyph with the given index at the middle of the cell.
- * Changes argument 'glyph'
- */
-static void position_glyph(cairo_t *cr, double x, double y,
-                           unsigned long idx, cairo_glyph_t *glyph)
-{
-    cairo_text_extents_t extents;
-
-    *glyph = (cairo_glyph_t){idx, 0, 0};
-
-    cairo_glyph_extents(cr, glyph, 1, &extents);
-
-    glyph->x += x + (cell_width - extents.width)/2.0 - extents.x_bearing;
-    glyph->y += y + glyph_baseline_offset;
 }
 
 /*
@@ -621,37 +603,13 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  *
  * Returns number of pages drawn.
  */
-static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
+static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
                               FT_Face ft_face, const char *fontname, unsigned long *charcode,
                               const struct unicode_block *block, FT_Face ft_other_face)
 {
     unsigned long prev_charcode;
     unsigned long prev_cell;
     int npages = 0;
-
-    FcConfig *fc_config = NULL;
-    PangoFontMap *fontmap = NULL;
-    PangoContext *context = NULL;
-    PangoLayout *layout = NULL;
-    PangoFontDescription *font_desc = NULL;
-
-    if (use_pango) {
-        fc_config = FcConfigCreate();
-        FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
-        fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
-        pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
-        context = pango_font_map_create_context(fontmap);
-        pango_cairo_update_context(cr, context);
-
-        font_desc = pango_font_description_new();
-        layout = pango_layout_new(context);
-        pango_layout_set_font_description(layout, font_desc);
-        pango_layout_set_width(layout, cell_width * PANGO_SCALE);
-        pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
-    } else {
-        cairo_set_scaled_font(cr, font);
-    }
-
     FT_UInt idx = FT_Get_Char_Index(ft_face, *charcode);
 
     do {
@@ -689,31 +647,17 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
             }
 
             /* draw the character */
-            if (!use_pango) {
-                cairo_glyph_t glyph;
-                position_glyph(cr, CELL_X(x_min, charpos), CELL_Y(charpos),
-                               idx, &glyph);
-                if (no_embed) {
-                    cairo_save(cr);
-                    cairo_glyph_path(cr, &glyph, 1);
-                    cairo_fill(cr);
-                    cairo_restore(cr);
-                } else {
-                    cairo_show_glyphs(cr, &glyph, 1);
-                }
+            char buf[9];
+            gint len = g_unichar_to_utf8((gunichar)*charcode, buf);
+            pango_layout_set_text(layout, buf, len);
+
+            double baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
+            cairo_move_to(cr, CELL_X(x_min, charpos), CELL_Y(charpos) + glyph_baseline_offset - baseline);
+
+            if (no_embed) {
+                pango_cairo_layout_path(cr, layout);
             } else {
-                char buf[9];
-                gint len = g_unichar_to_utf8((gunichar)*charcode, buf);
-                pango_layout_set_text(layout, buf, len);
-
-                double baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
-                cairo_move_to(cr, CELL_X(x_min, charpos), CELL_Y(charpos) + glyph_baseline_offset - baseline);
-
-                if (no_embed) {
-                    pango_cairo_layout_path(cr, layout);
-                } else {
-                    pango_cairo_show_layout(cr, layout);
-                }
+                pango_cairo_show_layout(cr, layout);
             }
 
             filled_cells[charpos] = true;
@@ -746,28 +690,45 @@ static int draw_unicode_block(cairo_t *cr, cairo_scaled_font_t *font,
         cairo_restore(cr);
     } while (idx && is_in_block(*charcode, block));
 
-    if (use_pango) {
-        g_object_unref(layout);
-        g_object_unref(context);
-        g_object_unref(fontmap);
-        pango_font_description_free(font_desc);
-        FcConfigDestroy(fc_config);
-    }
-
     *charcode = prev_charcode;
     return npages;
+}
+
+static PangoLayout *create_glyph_layout(cairo_t *cr)
+{
+    FcConfig *fc_config = FcConfigCreate();
+    FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
+    PangoFontMap *fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
+    pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
+    PangoContext *context = pango_font_map_create_context(fontmap);
+    pango_cairo_update_context(cr, context);
+
+    PangoFontDescription *font_desc = pango_font_description_new();
+    PangoLayout *layout = pango_layout_new(context);
+    pango_layout_set_font_description(layout, font_desc);
+    pango_layout_set_width(layout, cell_width * PANGO_SCALE);
+    pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+
+    g_object_unref(context);
+    g_object_unref(fontmap);
+    pango_font_description_free(font_desc);
+    FcConfigDestroy(fc_config);
+
+    return layout;
 }
 
 /*
  * The main drawing function.
  */
-static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
+static void draw_glyphs(cairo_t *cr, FT_Face ft_face,
                         const char *fontname, FT_Face ft_other_face)
 {
     cairo_surface_t *surface = cairo_get_target(cr);
 
     int pageno = 1;
     outline(surface, 0, pageno, fontname);
+
+    PangoLayout *layout = create_glyph_layout(cr);
 
     FT_UInt idx;
     FT_ULong charcode = get_first_char(ft_face, &idx);
@@ -776,13 +737,15 @@ static void draw_glyphs(cairo_t *cr, cairo_scaled_font_t *font, FT_Face ft_face,
         const struct unicode_block *block = get_unicode_block(charcode);
         if (block) {
             outline(surface, 1, pageno, block->name);
-            int npages = draw_unicode_block(cr, font, ft_face, fontname,
+            int npages = draw_unicode_block(cr, layout, ft_face, fontname,
                                             &charcode, block, ft_other_face);
             pageno += npages;
         }
 
         charcode = get_next_char(ft_face, charcode, &idx);
     }
+
+    g_object_unref(layout);
 }
 
 /*
@@ -805,7 +768,6 @@ static void usage(const char *cmd)
                       "  --print-outline,     -l              Print document outlines data to standard output\n"
                       "  --write-outline,     -w              Write document outlines (only in PDF output)\n"
                       "  --no-embed,          -e              Don't embed the font in the output file, draw the glyphs instead\n"
-                      "  --use-pango          -p              Use Pango for drawing glyph cells\n"
                       "  --include-range,     -i RANGE        Show characters in RANGE\n"
                       "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
                       "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"));
@@ -921,9 +883,9 @@ static void calculate_offsets(cairo_t *cr)
 }
 
 /*
- * Create cairo scaled font with the best size (hopefuly...)
+ * Calculate font scaling
  */
-static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
+void calc_font_scaling(FT_Face ft_face)
 {
     cairo_font_face_t *cr_face = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
     cairo_font_options_t *options = cairo_font_options_create();
@@ -966,8 +928,7 @@ static cairo_scaled_font_t *create_default_font(FT_Face ft_face)
     cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
     cairo_scaled_font_extents(cr_font, &extents);
     glyph_baseline_offset = (tgt_size - (extents.ascent + extents.descent)) / 2 + 2 + extents.ascent;
-
-    return cr_font;
+    cairo_scaled_font_destroy(cr_font);
 }
 
 /*
@@ -1090,16 +1051,9 @@ int main(int argc, char **argv)
     init_table_fonts();
     calculate_offsets(cr);
 
-    cairo_scaled_font_t *cr_font = create_default_font(face);
-    cr_status = cairo_scaled_font_status(cr_font);
-    if (cr_status != CAIRO_STATUS_SUCCESS) {
-        fprintf(stderr, _("%s: failed to create scaled font: %s\n"),
-                argv[0], cairo_status_to_string(cr_status));
-        exit(1);
-    }
-
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    draw_glyphs(cr, cr_font, face, fontname, other_face);
+    calc_font_scaling(face);
+    draw_glyphs(cr, face, fontname, other_face);
     cairo_destroy(cr);
 
     return 0;

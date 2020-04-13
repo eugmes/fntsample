@@ -73,13 +73,6 @@ This data can be used to add outlines (aka bookmarks) to resulting PDF file with
 .BI "\-\-write\-outline, \-w"
 Write document outlines directly (only in PDF output).
 .TP
-.BI "\-\-use\-pango, \-p"
-Use Pango for drawing glyph cells.
-Pango applies OpenType layout which may be more bullet proof than just
-relaying on the font's cmap.
-This especially important for fonts that rely on OpenType layout for
-showing even the base forms of the glyphs.
-.TP
 .BI "\-\-include\-range, \-i " RANGE
 Show characters in \fIRANGE\fP.
 .TP
