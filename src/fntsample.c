@@ -45,11 +45,13 @@
 
 #define _(str)	gettext(str)
 
-#define A4_WIDTH	(8.3*72)
-#define A4_HEIGHT	(11.7*72)
+static const double POINTS_PER_INCH = 72;
 
-#define xmin_border	(72.0/1.5)
-#define ymin_border	(72.0)
+#define A4_WIDTH	(8.3 * POINTS_PER_INCH)
+#define A4_HEIGHT	(11.7 * POINTS_PER_INCH)
+
+#define xmin_border	(POINTS_PER_INCH / 1.5)
+#define ymin_border	POINTS_PER_INCH
 #define cell_width	((A4_WIDTH - 2*xmin_border) / 16)
 #define cell_height	((A4_HEIGHT - 2*ymin_border) / 16)
 
@@ -520,8 +522,9 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
     cairo_set_line_width(cr, 0.5);
     /* draw horizontal lines */
     for (int i = 1; i < 16; i++) {
-        cairo_move_to(cr, x_min, 72.0 + i * TABLE_H/16);
-        cairo_line_to(cr, x_max, 72.0 + i * TABLE_H/16);
+        // TODO: use better name instead of just POINTS_PER_INCH
+        cairo_move_to(cr, x_min, POINTS_PER_INCH + i * TABLE_H/16);
+        cairo_line_to(cr, x_max, POINTS_PER_INCH + i * TABLE_H/16);
     }
 
     /* draw vertical lines */
@@ -542,10 +545,10 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
         PangoRectangle r;
         PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
         cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
-                      72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+                      POINTS_PER_INCH + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         cairo_move_to(cr, x_min + x_cells * cell_width + 5.0,
-                      72.0 + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+                      POINTS_PER_INCH + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         g_object_unref(layout);
     }
@@ -857,7 +860,7 @@ static void init_table_fonts(void)
     /* FIXME is this correct? */
     PangoCairoFontMap *map = (PangoCairoFontMap *)pango_cairo_font_map_get_default();
 
-    pango_cairo_font_map_set_resolution(map, 72.0);
+    pango_cairo_font_map_set_resolution(map, POINTS_PER_INCH);
 
     table_fonts.header = pango_font_description_from_string(get_style("header-font"));
     table_fonts.font_name = pango_font_description_from_string(get_style("font-name-font"));
