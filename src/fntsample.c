@@ -485,12 +485,12 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *block_na
     PangoRectangle r;
 
     PangoLayout *layout = layout_text(cr, table_fonts.font_name, face_name, &r);
-    cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 30.0);
+    cairo_move_to(cr, (A4_WIDTH - pango_units_to_double(r.width))/2.0, 30.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 
     layout = layout_text(cr, table_fonts.header, block_name, &r);
-    cairo_move_to(cr, (A4_WIDTH - (double)r.width/PANGO_SCALE)/2.0, 50.0);
+    cairo_move_to(cr, (A4_WIDTH - pango_units_to_double(r.width))/2.0, 50.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 }
@@ -551,11 +551,12 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 
         PangoRectangle r;
         PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
-        cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
-                      POINTS_PER_INCH + (i+0.5) * table_height/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+        cairo_move_to(cr,
+                      x_min - pango_units_to_double(PANGO_RBEARING(r)) - 5.0,
+                      POINTS_PER_INCH + (i+0.5) * table_height/16 + pango_units_to_double(PANGO_DESCENT(r))/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         cairo_move_to(cr, x_min + x_cells * cell_width + 5.0,
-                      POINTS_PER_INCH + (i+0.5) * table_height/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+                      POINTS_PER_INCH + (i+0.5) * table_height/16 + pango_units_to_double(PANGO_DESCENT(r))/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         g_object_unref(layout);
     }
@@ -565,7 +566,8 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
 
         PangoRectangle r;
         PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
-        cairo_move_to(cr, x_min + i*cell_width + (cell_width - (double)r.width/PANGO_SCALE)/2,
+        cairo_move_to(cr,
+                      x_min + i*cell_width + (cell_width - pango_units_to_double(r.width))/2,
                       ymin_border - 5.0);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         g_object_unref(layout);
@@ -599,7 +601,8 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 
     PangoRectangle r;
     PangoLayout *layout = layout_text(cr, table_fonts.cell_numbers, buf, &r);
-    cairo_move_to(cr, x + (cell_width - (double)r.width/PANGO_SCALE)/2.0, y + cell_height - cell_label_offset);
+    cairo_move_to(cr, x + (cell_width - pango_units_to_double(r.width))/2.0,
+                  y + cell_height - cell_label_offset);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 }
@@ -661,7 +664,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
             gint len = g_unichar_to_utf8((gunichar)*charcode, buf);
             pango_layout_set_text(layout, buf, len);
 
-            double baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
+            double baseline = pango_units_to_double(pango_layout_get_baseline(layout));
             cairo_move_to(cr, cell_x(x_min, charpos), cell_y(charpos) + glyph_baseline_offset - baseline);
 
             if (no_embed) {
@@ -716,7 +719,7 @@ static PangoLayout *create_glyph_layout(cairo_t *cr)
     PangoFontDescription *font_desc = pango_font_description_new();
     PangoLayout *layout = pango_layout_new(context);
     pango_layout_set_font_description(layout, font_desc);
-    pango_layout_set_width(layout, cell_width * PANGO_SCALE);
+    pango_layout_set_width(layout, pango_units_from_double(cell_width));
     pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 
     g_object_unref(context);
