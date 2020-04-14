@@ -47,16 +47,23 @@
 
 static const double POINTS_PER_INCH = 72;
 
-#define A4_WIDTH	(8.3 * POINTS_PER_INCH)
-#define A4_HEIGHT	(11.7 * POINTS_PER_INCH)
+static const double A4_WIDTH = 8.3 * POINTS_PER_INCH;
+static const double A4_HEIGHT = 11.7 * POINTS_PER_INCH;
 
-#define xmin_border	(POINTS_PER_INCH / 1.5)
-#define ymin_border	POINTS_PER_INCH
-#define cell_width	((A4_WIDTH - 2*xmin_border) / 16)
-#define cell_height	((A4_HEIGHT - 2*ymin_border) / 16)
+static const double xmin_border = POINTS_PER_INCH / 1.5;
+static const double ymin_border = POINTS_PER_INCH;
+static const double cell_width = (A4_WIDTH - 2 * xmin_border) / 16;
+static const double cell_height = (A4_HEIGHT - 2 * ymin_border) / 16;
 
-#define CELL_X(x_min, N)	((x_min) + cell_width * ((N) / 16))
-#define CELL_Y(N)	(ymin_border + cell_height * ((N) % 16))
+static double cell_x(double x_min, int pos)
+{
+    return x_min + cell_width * (pos / 16);
+}
+
+static double cell_y(int pos)
+{
+    return ymin_border + cell_height * (pos % 16);
+}
 
 static struct option longopts[] = {
     {"blocks-file", 1, 0, 'b'},
@@ -507,12 +514,12 @@ static void highlight_cell(cairo_t *cr, double x, double y)
 static void draw_grid(cairo_t *cr, unsigned int x_cells,
                       unsigned long block_start)
 {
-    double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
-    double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
+    const double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
+    const double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
+    const double table_height = A4_HEIGHT - ymin_border * 2;
 
-#define TABLE_H (A4_HEIGHT - ymin_border * 2)
     cairo_set_line_width(cr, 1.0);
-    cairo_rectangle(cr, x_min, ymin_border, x_max - x_min, TABLE_H);
+    cairo_rectangle(cr, x_min, ymin_border, x_max - x_min, table_height);
     cairo_move_to(cr, x_min, ymin_border);
     cairo_line_to(cr, x_min, ymin_border - 15.0);
     cairo_move_to(cr, x_max, ymin_border);
@@ -523,8 +530,8 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
     /* draw horizontal lines */
     for (int i = 1; i < 16; i++) {
         // TODO: use better name instead of just POINTS_PER_INCH
-        cairo_move_to(cr, x_min, POINTS_PER_INCH + i * TABLE_H/16);
-        cairo_line_to(cr, x_max, POINTS_PER_INCH + i * TABLE_H/16);
+        cairo_move_to(cr, x_min, POINTS_PER_INCH + i * table_height/16);
+        cairo_line_to(cr, x_max, POINTS_PER_INCH + i * table_height/16);
     }
 
     /* draw vertical lines */
@@ -545,10 +552,10 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells,
         PangoRectangle r;
         PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
         cairo_move_to(cr, x_min - (double)PANGO_RBEARING(r)/PANGO_SCALE - 5.0,
-                      POINTS_PER_INCH + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+                      POINTS_PER_INCH + (i+0.5) * table_height/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         cairo_move_to(cr, x_min + x_cells * cell_width + 5.0,
-                      POINTS_PER_INCH + (i+0.5) * TABLE_H/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
+                      POINTS_PER_INCH + (i+0.5) * table_height/16 + (double)PANGO_DESCENT(r)/PANGO_SCALE/2);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         g_object_unref(layout);
     }
@@ -641,12 +648,12 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
             /* fill empty cells before the current glyph */
             for (unsigned long i = prev_cell + 1; i < *charcode; i++) {
                 int pos = i - tbl_start;
-                fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
+                fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), i);
             }
 
             /* if it is new glyph - highlight the cell */
             if (ft_other_face && !FT_Get_Char_Index(ft_other_face, *charcode)) {
-                highlight_cell(cr, CELL_X(x_min, charpos), CELL_Y(charpos));
+                highlight_cell(cr, cell_x(x_min, charpos), cell_y(charpos));
             }
 
             /* draw the character */
@@ -655,7 +662,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
             pango_layout_set_text(layout, buf, len);
 
             double baseline = pango_layout_get_baseline(layout) / PANGO_SCALE;
-            cairo_move_to(cr, CELL_X(x_min, charpos), CELL_Y(charpos) + glyph_baseline_offset - baseline);
+            cairo_move_to(cr, cell_x(x_min, charpos), cell_y(charpos) + glyph_baseline_offset - baseline);
 
             if (no_embed) {
                 pango_cairo_layout_path(cr, layout);
@@ -673,7 +680,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
         /* Fill remaining empty cells */
         for (unsigned long i = prev_cell + 1; i < tbl_end; i++) {
             int pos = i - tbl_start;
-            fill_empty_cell(cr, CELL_X(x_min, pos), CELL_Y(pos), i);
+            fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), i);
         }
 
         /*
@@ -682,7 +689,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
          */
         for (unsigned long i = 0; i < tbl_end - tbl_start; i++) {
             if (filled_cells[i]) {
-                draw_charcode(cr, CELL_X(x_min, i), CELL_Y(i),
+                draw_charcode(cr, cell_x(x_min, i), cell_y(i),
                               i + tbl_start);
             }
         }
