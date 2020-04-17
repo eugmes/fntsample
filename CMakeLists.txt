@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
+cmake_policy(SET CMP0077 NEW)
+
 project(fntsample
   VERSION 5.3
   DESCRIPTION "PDF and PostScript font samples generator"
