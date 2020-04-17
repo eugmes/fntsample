@@ -34,7 +34,6 @@ target_include_directories(fntsample PRIVATE
 target_link_libraries(fntsample PRIVATE
   m
   Intl
-  Iconv::Iconv
   PkgConfig::pkgs
 )
 

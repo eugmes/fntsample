@@ -13,7 +13,6 @@ include(CPack)
 
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
-find_package(Iconv REQUIRED)
 
 # CMake does not create an imported target for libintl...
 add_library(Intl INTERFACE IMPORTED GLOBAL)

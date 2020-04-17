@@ -13,12 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <assert.h>
 #include <errno.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include FT_SFNT_NAMES_H
-#include FT_TRUETYPE_IDS_H
-#include FT_TYPE1_TABLES_H
 #include <cairo.h>
 #include <cairo-pdf.h>
 #include <cairo-ps.h>
@@ -37,7 +35,6 @@
 #include <math.h>
 #include <libintl.h>
 #include <locale.h>
-#include <iconv.h>
 
 #include "unicode_blocks.h"
 #include "static_unicode_blocks.h"
@@ -617,7 +614,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  * Returns number of pages drawn.
  */
 static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
-                              FT_Face ft_face, const char *fontname, unsigned long *charcode,
+                              FT_Face ft_face, const char *font_name, unsigned long *charcode,
                               const struct unicode_block *block, FT_Face ft_other_face)
 {
     unsigned long prev_charcode;
@@ -635,7 +632,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
         bool filled_cells[256]; /* 16x16 glyphs max */
 
         cairo_save(cr);
-        draw_header(cr, fontname, block->name);
+        draw_header(cr, font_name, block->name);
         prev_cell = tbl_start - 1;
 
         memset(filled_cells, '\0', sizeof(filled_cells));
@@ -707,16 +704,14 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
     return npages;
 }
 
-static PangoLayout *create_glyph_layout(cairo_t *cr)
+static PangoLayout *create_glyph_layout(cairo_t *cr, FcConfig *fc_config, FcPattern *fc_font)
 {
-    FcConfig *fc_config = FcConfigCreate();
-    FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
     PangoFontMap *fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
     pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
     PangoContext *context = pango_font_map_create_context(fontmap);
     pango_cairo_update_context(cr, context);
 
-    PangoFontDescription *font_desc = pango_font_description_new();
+    PangoFontDescription *font_desc = pango_fc_font_description_from_pattern(fc_font, FALSE);
     PangoLayout *layout = pango_layout_new(context);
     pango_layout_set_font_description(layout, font_desc);
     pango_layout_set_width(layout, pango_units_from_double(cell_width));
@@ -725,7 +720,6 @@ static PangoLayout *create_glyph_layout(cairo_t *cr)
     g_object_unref(context);
     g_object_unref(fontmap);
     pango_font_description_free(font_desc);
-    FcConfigDestroy(fc_config);
 
     return layout;
 }
@@ -734,14 +728,29 @@ static PangoLayout *create_glyph_layout(cairo_t *cr)
  * The main drawing function.
  */
 static void draw_glyphs(cairo_t *cr, FT_Face ft_face,
-                        const char *fontname, FT_Face ft_other_face)
+                        FT_Face ft_other_face)
 {
+    FcConfig *fc_config = FcConfigCreate();
+    FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
+
+    FcPattern *fc_pat = FcPatternCreate();
+    FcPatternAddInteger(fc_pat, FC_INDEX, font_index);
+
+    FcFontSet *fc_fontset = FcFontList(fc_config, fc_pat, NULL);
+    assert(fc_fontset->nfont > 0);
+    FcPattern *fc_font = fc_fontset->fonts[0];
+
+    const char *font_name;
+    if (FcPatternGetString(fc_font, FC_FULLNAME, 0, (FcChar8 **)&font_name) != FcResultMatch) {
+        font_name = "Unknown";
+    }
+
     cairo_surface_t *surface = cairo_get_target(cr);
 
     int pageno = 1;
-    outline(surface, 0, pageno, fontname);
+    outline(surface, 0, pageno, font_name);
 
-    PangoLayout *layout = create_glyph_layout(cr);
+    PangoLayout *layout = create_glyph_layout(cr, fc_config, fc_font);
 
     FT_UInt idx;
     FT_ULong charcode = get_first_char(ft_face, &idx);
@@ -750,7 +759,7 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face,
         const struct unicode_block *block = get_unicode_block(charcode);
         if (block) {
             outline(surface, 1, pageno, block->name);
-            int npages = draw_unicode_block(cr, layout, ft_face, fontname,
+            int npages = draw_unicode_block(cr, layout, ft_face, font_name,
                                             &charcode, block, ft_other_face);
             pageno += npages;
         }
@@ -759,6 +768,10 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face,
     }
 
     g_object_unref(layout);
+
+    FcPatternDestroy(fc_pat);
+    FcFontSetDestroy(fc_fontset);
+    FcConfigDestroy(fc_config);
 }
 
 /*
@@ -790,76 +803,6 @@ static void usage(const char *cmd)
     for (const struct fntsample_style *style = styles; style->name; style++) {
         fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
     }
-}
-
-/*
- * Try to get font name for a given font face.
- * Returned name should be free()'d after use.
- * If function cannot allocate memory, it terminates the program.
- */
-static const char *get_font_name(FT_Face face)
-{
-    FT_Error error;
-    char *fontname = NULL;
-
-    /* try SFNT format */
-    unsigned num_names = FT_Get_Sfnt_Name_Count(face);
-    iconv_t u16to8 = iconv_open("UTF-8", "UTF-16BE");
-
-    for (unsigned i = 0; i < num_names; i++) {
-        FT_SfntName name;
-
-        error = FT_Get_Sfnt_Name(face, i, &name);
-        if (error) {
-            continue;
-        }
-
-        if (name.name_id == TT_NAME_ID_FULL_NAME &&
-            name.platform_id == TT_PLATFORM_MICROSOFT &&
-            name.encoding_id == TT_MS_ID_UNICODE_CS) {
-            fontname = malloc(name.string_len * 2 + 1);
-            char *bufptr = fontname;
-            size_t inbytes = name.string_len;
-            size_t outbytes = name.string_len * 2;
-            if (iconv(u16to8, (char**)&name.string, &inbytes, &bufptr, &outbytes) == (size_t)-1) {
-                continue;
-            }
-            *bufptr = '\0';
-        }
-    }
-
-    iconv_close(u16to8);
-
-    if (fontname) {
-        return fontname;
-    }
-
-    /* try Type1 format */
-    PS_FontInfoRec fontinfo;
-
-    error = FT_Get_PS_Font_Info(face, &fontinfo);
-    if (!error && fontinfo.full_name) {
-        fontname = strdup(fontinfo.full_name);
-        if (!fontname) {
-            perror("strdup");
-            exit(1);
-        }
-        return fontname;
-    }
-
-    /* fallback */
-    const char *family_name = face->family_name ? face->family_name : "Unknown";
-    const char *style_name = face->style_name ? face->style_name : "";
-    size_t len = strlen(family_name) + strlen(style_name) + 1/* for space */;
-
-    fontname = malloc(len + 1);
-    if (!fontname) {
-        perror("malloc");
-        exit(1);
-    }
-
-    sprintf(fontname, "%s %s", family_name, style_name);
-    return fontname;
 }
 
 /*
@@ -1019,8 +962,6 @@ int main(int argc, char **argv)
         exit(4);
     }
 
-    const char *fontname = get_font_name(face);
-
     FT_Face other_face = NULL;
 
     if (other_font_file_name) {
@@ -1066,7 +1007,7 @@ int main(int argc, char **argv)
 
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     calc_font_scaling(face);
-    draw_glyphs(cr, face, fontname, other_face);
+    draw_glyphs(cr, face, other_face);
     cairo_destroy(cr);
 
     return 0;
