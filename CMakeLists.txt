@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
 
-cmake_policy(SET CMP0077 NEW)
+if(POLICY CMP0077) # Introduced in 3.13
+  cmake_policy(SET CMP0077 NEW)
+endif()
 
 project(fntsample
   VERSION 5.3
