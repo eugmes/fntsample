@@ -1,6 +1,6 @@
 /*
  * This file is in public domain
- * Author: Eugeniy Meshcheryakov <eugen@debian.org>
+ * Author: Ievgenii Meshcheriakov <eugen@debian.org>
  */
 #ifndef UNICODE_BLOCKS_H
 #define UNICODE_BLOCKS_H

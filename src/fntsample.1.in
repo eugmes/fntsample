@@ -144,7 +144,7 @@ fntsample \-f font.ttf \-o temp.pdf \-l > outlines.txt
 pdfoutline temp.pdf outlines.txt samples.pdf
 .ESAMPLE
 .SH AUTHOR
-Copyright \(co 2007-2017 Eugeniy Meshcheryakov <eugen@debian.org>
+Copyright \(co Ievgenii Meshcheriakov <eugen@debian.org>
 .br
 Homepage: <@CMAKE_PROJECT_HOMEPAGE_URL@>
 .SH SEE ALSO
