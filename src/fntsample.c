@@ -42,15 +42,15 @@
 
 #define _(str)	gettext(str)
 
-static const double POINTS_PER_INCH = 72;
+#define POINTS_PER_INCH 72
 
-static const double A4_WIDTH = 8.3 * POINTS_PER_INCH;
-static const double A4_HEIGHT = 11.7 * POINTS_PER_INCH;
+#define A4_WIDTH  (8.3 * POINTS_PER_INCH)
+#define A4_HEIGHT (11.7 * POINTS_PER_INCH)
 
-static const double xmin_border = POINTS_PER_INCH / 1.5;
-static const double ymin_border = POINTS_PER_INCH;
-static const double cell_width = (A4_WIDTH - 2 * xmin_border) / 16;
-static const double cell_height = (A4_HEIGHT - 2 * ymin_border) / 16;
+#define xmin_border (POINTS_PER_INCH / 1.5)
+#define ymin_border POINTS_PER_INCH
+#define cell_width ((A4_WIDTH - 2 * xmin_border) / 16)
+#define cell_height ((A4_HEIGHT - 2 * ymin_border) / 16)
 
 static double cell_x(double x_min, int pos)
 {
