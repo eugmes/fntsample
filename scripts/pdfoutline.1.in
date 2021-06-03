@@ -55,6 +55,17 @@ Document title
 | +-Chapter 1.2
 +-Chapter 2
 .ESAMPLE
+.SH BUGS
+Due to a bug in Perl library \fBPDF::API2 v2.039\fP and earlier, some
+Unicode characters are handled incorrectly and cause outline string
+corruptions. For example, everything after the CJK character U+6B63 (正)
+will get corrupted in the PDF output because its UTF-16 encoding contains
+byte 0x0A, which happens to be an ASCII newline character.
+.P
+For user convenience, this \fBpdfoutline\fP version includes a workaround
+that should allow flawless operation down to \fBPDF::API2 v2.034\fP. Users
+of even earlier versions should upgrade \fBPDF::API2\fP.
+.P
 .SH AUTHOR
 .B pdfoutline
 author is Ievgenii Meshcheriakov <eugen@debian.org>

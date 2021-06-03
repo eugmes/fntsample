@@ -65,7 +65,16 @@ sub encode_pdf_text {
     if ($str !~ /[^[:ascii:]]/) {
         return $str;
     } else {
-        return encode('UTF-16', $str);
+        if (PDF::API2->VERSION ge "2.034") {
+            # Perl PDF::API2 >= 2.034 already handles non-ASCII characters
+            # automatically. This also avoids a bug before v2.040.
+            # See: https://rt.cpan.org/Public/Bug/Display.html?id=33497
+            return $str;
+        } else {
+            # Buggy before PDF::API2 v2.040.
+            # See: https://rt.cpan.org/Public/Bug/Display.html?id=134957
+            return encode('UTF-16', $str);
+        }
     }
 }
 
@@ -116,6 +125,12 @@ setlocale(LC_ALL, q{});
 if ($#ARGV != 2) {
     usage;
     exit 1;
+}
+
+if (PDF::API2->VERSION le "2.033") {
+    print STDERR "Warning: Perl PDF::API2 v2.033 or earlier detected.\n";
+    print STDERR "It's known to have an outline corruption bug!\n";
+    print STDERR "See pdfoutline man page for more information.\n";
 }
 
 my ($inputfile, $outlinefile, $outputfile) = @ARGV;
