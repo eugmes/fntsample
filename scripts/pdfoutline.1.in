@@ -58,7 +58,7 @@ Document title
 .SH BUGS
 Due to a bug in Perl library \fBPDF::API2 v2.039\fP and earlier, some
 Unicode characters are handled incorrectly and cause outline string
-corruptions. For example, everything after the CJK character U+6B63 (正)
+corruptions. For example, everything after the CJK character U+4E0A (上)
 will get corrupted in the PDF output because its UTF-16 encoding contains
 byte 0x0A, which happens to be an ASCII newline character.
 .P
