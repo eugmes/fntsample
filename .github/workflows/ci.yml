@@ -47,4 +47,4 @@ jobs:
       run: cmake --build ${{ github.workspace }}/build
 
     - name: Test
-      run: ${{ github.workspace }}/build/src/fntsameple --help
+      run: ${{ github.workspace }}/build/src/fntsample --help
