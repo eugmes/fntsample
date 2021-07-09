@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+        include:
+        - os: ubuntu-latest
+          blocks: -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
+        - os: macos-latest
+          env:
+          - CMAKE_PREFIX_PATH: /usr/local/opt/gettext
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install APT Packages
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: >
+        sudo apt update &&
+        sudo apt install cmake gettext libcairo2-dev libglib2.0-dev libfreetype6-dev libpango1.0-dev ninja-build pkg-config unicode-data
+
+    - name: Install Homebrew Packages
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: >
+        brew update &&
+        brew install cairo cmake fontconfig freetype gettext glib pango ninja pkg-config
+
+    - name: Configure
+      run: cmake -GNinja -B${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} ${{ matrix.blocks }}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build
+
+    - name: Test
+      run: ${{ github.workspace }}/build/src/fntsameple --help
