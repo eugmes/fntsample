@@ -18,10 +18,12 @@ include(CPack)
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
 
-# CMake does not create an imported target for libintl...
-add_library(Intl INTERFACE IMPORTED GLOBAL)
-target_include_directories(Intl INTERFACE ${Intl_INCLUDE_DIRS})
-target_link_libraries(Intl INTERFACE ${Intl_LIBRARIES})
+# The target was added in CMake 3.20.
+if(NOT TARGET Intl::Intl)
+  add_library(Intl::Intl INTERFACE IMPORTED GLOBAL)
+  target_include_directories(Intl::Intl INTERFACE ${Intl_INCLUDE_DIRS})
+  target_link_libraries(Intl::Intl INTERFACE ${Intl_LIBRARIES})
+endif()
 
 pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
   cairo>=1.15.4
