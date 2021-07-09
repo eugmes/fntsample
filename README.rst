@@ -3,8 +3,8 @@ fntsample
 
 |build| |license|
 
-.. |build| image:: https://travis-ci.org/eugmes/fntsample.svg?branch=master
-    :target: https://travis-ci.org/eugmes/fntsample
+.. |build| image:: https://github.com/eugmes/fntsample/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/eugmes/fntsample/actions/workflows/ci.yml
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
     :alt: License: GPL v3
     :target: https://www.gnu.org/licenses/gpl-3.0
