@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fntsample\n"
 "Report-Msgid-Bugs-To: eugen@debian.org\n"
-"POT-Creation-Date: 2019-11-03 01:14+0100\n"
+"POT-Creation-Date: 2021-08-01 16:57+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,42 +16,37 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/fntsample.c:327
+#: src/fntsample.c:333
 #, c-format
 msgid "Unicode blocks file should be given at most once!\n"
 msgstr ""
 
-#: src/fntsample.c:333
+#: src/fntsample.c:339
 #, c-format
 msgid "Failed to load any blocks from the blocks file!\n"
 msgstr ""
 
-#: src/fntsample.c:339 src/fntsample.c:357
+#: src/fntsample.c:345 src/fntsample.c:363
 #, c-format
 msgid "Font file name should be given only once!\n"
 msgstr ""
 
-#: src/fntsample.c:346
+#: src/fntsample.c:352
 #, c-format
 msgid "Output file name should be given only once!\n"
 msgstr ""
 
-#: src/fntsample.c:374
-#, c-format
-msgid "Cairo >= 1.15.4 is required for this option!\n"
-msgstr ""
-
-#: src/fntsample.c:417
+#: src/fntsample.c:419
 #, c-format
 msgid "Font index should be non-negative!\n"
 msgstr ""
 
-#: src/fntsample.c:422
+#: src/fntsample.c:424
 #, c-format
 msgid "-s and -g cannot be used together!\n"
 msgstr ""
 
-#: src/fntsample.c:800
+#: src/fntsample.c:782
 #, c-format
 msgid ""
 "Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
@@ -59,7 +54,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/fntsample.c:802
+#: src/fntsample.c:784
 #, c-format
 msgid ""
 "Options:\n"
@@ -82,79 +77,58 @@ msgid ""
 "output)\n"
 "  --no-embed,          -e              Don't embed the font in the output "
 "file, draw the glyphs instead\n"
-"  --use-pango          -p              Use Pango for drawing glyph cells\n"
 "  --include-range,     -i RANGE        Show characters in RANGE\n"
 "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
 "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"
 msgstr ""
 
-#: src/fntsample.c:820
+#: src/fntsample.c:801
 #, c-format
 msgid ""
 "\n"
 "Supported styles (and default values):\n"
 msgstr ""
 
-#: src/fntsample.c:953
+#: src/fntsample.c:864
 #, c-format
 msgid "Not enough space for rendering glyphs. Make cell font smaller.\n"
 msgstr ""
 
-#: src/fntsample.c:959
+#: src/fntsample.c:870
 #, c-format
 msgid "The font has strange metrics: ascent + descent = %g\n"
 msgstr ""
 
-#: src/fntsample.c:996
+#: src/fntsample.c:903
 #, c-format
-msgid "Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"
-msgstr ""
-
-#: src/fntsample.c:1002
-#, c-format
-msgid "Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"
-msgstr ""
-
-#: src/fntsample.c:1008
-#, c-format
-msgid "Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"
-msgstr ""
-
-#: src/fntsample.c:1014
-#, c-format
-msgid "Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"
+msgid "Failed to parse environment variable SOURCE_DATE_EPOCH.\n"
 msgstr ""
 
 #. TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated
-#: src/fntsample.c:1047
+#: src/fntsample.c:929
 #, c-format
 msgid "%s: freetype error\n"
 msgstr ""
 
-#: src/fntsample.c:1055
+#: src/fntsample.c:937
 #, c-format
 msgid "%s: failed to open font file %s\n"
 msgstr ""
 
-#: src/fntsample.c:1067
+#: src/fntsample.c:947
 #, c-format
 msgid "%s: failed to create new font face\n"
 msgstr ""
 
 #. TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated
-#: src/fntsample.c:1086
+#: src/fntsample.c:966
 #, c-format
 msgid "%s: failed to create cairo surface: %s\n"
 msgstr ""
 
-#: src/fntsample.c:1094
+#: src/fntsample.c:974
 #, c-format
 msgid "%s: cairo_create failed: %s\n"
-msgstr ""
-
-#: src/fntsample.c:1107
-#, c-format
-msgid "%s: failed to create scaled font: %s\n"
 msgstr ""
 
 #: scripts/pdfoutline.pl:42
@@ -162,7 +136,7 @@ msgstr ""
 msgid "Usage: %s input.pdf outline.txt out.pdf\n"
 msgstr ""
 
-#: scripts/pdfoutline.pl:126 scripts/pdf-extract-outline.pl:174
+#: scripts/pdfoutline.pl:141 scripts/pdf-extract-outline.pl:174
 #, perl-brace-format
 msgid "Cannot open outline file '{outlinefile}'"
 msgstr ""
