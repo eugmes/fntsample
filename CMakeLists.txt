@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12..3.21)
 
 project(fntsample
-  VERSION 5.3
+  VERSION 5.4
   DESCRIPTION "PDF and PostScript font samples generator"
   HOMEPAGE_URL "https://github.com/eugmes/fntsample"
   LANGUAGES C)
