@@ -1,18 +1,27 @@
 configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
 
+set(
+  C_WARNING_FLAGS
+    -Wcast-align -Werror-implicit-function-declaration -Wchar-subscripts
+    -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security
+    -Wmissing-format-attribute -fno-common -Wundef
+  CACHE STRING "Warning flags for C compiler"
+)
+
 add_executable(gen-unicode-blocks EXCLUDE_FROM_ALL
   gen_unicode_blocks.c
   read_blocks.c
 )
 
 target_compile_features(gen-unicode-blocks PRIVATE c_std_99)
+target_compile_options(gen-unicode-blocks PRIVATE ${C_WARNING_FLAGS})
 
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/static_unicode_blocks.c
-  COMMAND "$<TARGET_FILE:gen-unicode-blocks>" "${UNICODE_BLOCKS}" "${CMAKE_CURRENT_BINARY_DIR}/static_unicode_blocks.c"
-  DEPENDS ${UNICODE_BLOCKS} gen-unicode-blocks
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT static_unicode_blocks.c
+  COMMAND "$<TARGET_FILE:gen-unicode-blocks>" "${UNICODE_BLOCKS}" static_unicode_blocks.c
+  MAIN_DEPENDENCY ${UNICODE_BLOCKS}
+  DEPENDS gen-unicode-blocks
   VERBATIM
 )
 
@@ -37,10 +46,7 @@ target_link_libraries(fntsample PRIVATE
   PkgConfig::pkgs
 )
 
-target_compile_options(fntsample PRIVATE
-  -Wcast-align -Werror-implicit-function-declaration -Wchar-subscripts
-  -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security
-  -Wmissing-format-attribute -fno-common -Wundef)
+target_compile_options(fntsample PRIVATE ${C_WARNING_FLAGS})
 
 # TODO use improved install handling in CMake 3.14
 install(TARGETS fntsample DESTINATION ${CMAKE_INSTALL_BINDIR})
