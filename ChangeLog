@@ -1,3 +1,15 @@
+Changes in version 5.4:
+
+	* Fixed handling of PDF files with already existing outlines
+	  in pdfoutline.
+	* Added a script for extracting outlines from PDF files
+	  (pdf-extract-outline).
+	* Pango is always used to draw glyphs, options -p and --use-pango are
+	  accepted but ignored.
+	* Fixed possible outline corruption in pdfoutline with some versions
+	  of PDF::API2 library (Yifeng Li).
+	* Various code and build system cleanups.
+
 Changes in version 5.3
 	* Support reproducible builds with PDF output (Khaled Hosny)
 
