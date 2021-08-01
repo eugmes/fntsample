@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <assert.h>
-#include <errno.h>
+// TODO: freetype 2.10.3, do not include ft2build.h anymore
 #include <ft2build.h>
-#include FT_FREETYPE_H
+#include <freetype/freetype.h>
 #include <cairo.h>
 #include <cairo-pdf.h>
 #include <cairo-ps.h>
