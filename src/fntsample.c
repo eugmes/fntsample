@@ -897,39 +897,15 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
 
     if (source_date_epoch) {
         char *endptr;
+        time_t now = strtoul(source_date_epoch, &endptr, 10);
 
-        errno = 0;
-        unsigned long long epoch = strtoull(source_date_epoch, &endptr, 10);
-
-        if ((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0)) || (errno != 0 && epoch == 0)) {
-            fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: strtoull: %s\n"),
-                    strerror(errno));
+        if (*endptr != 0) {
+            fprintf(stderr, _("Failed to parse environment variable SOURCE_DATE_EPOCH.\n"));
             exit(1);
         }
-
-        if (endptr == source_date_epoch) {
-            fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: No digits were found: %s\n"),
-                    endptr);
-            exit(1);
-        }
-
-        if (*endptr != '\0') {
-            fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: %s\n"),
-                    endptr);
-            exit(1);
-        }
-
-        if (epoch > ULONG_MAX) {
-            fprintf(stderr, _("Environment variable $SOURCE_DATE_EPOCH: must be <= %lu but saw: %llu\n"),
-                    ULONG_MAX, epoch);
-            exit(1);
-        }
-
-        time_t now = (time_t)epoch;
         struct tm *build_time = gmtime(&now);
-
         char buffer[25];
-        strftime(buffer, 25, "%Y-%m-%dT%H:%M:%S%z", build_time);
+        strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S%z", build_time);
 
         cairo_pdf_surface_set_metadata(surface,
                                        CAIRO_PDF_METADATA_CREATE_DATE,
