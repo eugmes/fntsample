@@ -19,8 +19,8 @@ target_compile_options(gen-unicode-blocks PRIVATE ${C_WARNING_FLAGS})
 
 add_custom_command(
   OUTPUT static_unicode_blocks.c
-  COMMAND "$<TARGET_FILE:gen-unicode-blocks>" "${UNICODE_BLOCKS}" static_unicode_blocks.c
-  MAIN_DEPENDENCY ${UNICODE_BLOCKS}
+  COMMAND gen-unicode-blocks "${UNICODE_BLOCKS}" static_unicode_blocks.c
+  MAIN_DEPENDENCY "${UNICODE_BLOCKS}"
   DEPENDS gen-unicode-blocks
   VERBATIM
 )
