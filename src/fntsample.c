@@ -614,15 +614,14 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  * Returns number of pages drawn.
  */
 static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
-                              FT_Face ft_face, const char *font_name, unsigned long *charcode,
+                              FT_Face ft_face, const char *font_name, unsigned long charcode,
                               const struct unicode_block *block, FT_Face ft_other_face)
 {
-    unsigned long prev_charcode;
     int npages = 0;
-    FT_UInt idx = FT_Get_Char_Index(ft_face, *charcode);
+    FT_UInt idx = FT_Get_Char_Index(ft_face, charcode);
 
     do {
-        unsigned long offset = ((*charcode - block->start) / 0x100) * 0x100;
+        unsigned long offset = ((charcode - block->start) / 0x100) * 0x100;
         unsigned long tbl_start = block->start + offset;
         unsigned long tbl_end = tbl_start + 0xFF > block->end ?
             block->end + 1 : tbl_start + 0x100;
@@ -644,18 +643,18 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
          */
         do {
             /* fill empty cells before the current glyph */
-            for (; curr_charcode < *charcode; curr_charcode++, pos++) {
+            for (; curr_charcode < charcode; curr_charcode++, pos++) {
                 fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), curr_charcode);
             }
 
             /* if it is new glyph - highlight the cell */
-            if (ft_other_face && !FT_Get_Char_Index(ft_other_face, *charcode)) {
+            if (ft_other_face && !FT_Get_Char_Index(ft_other_face, charcode)) {
                 highlight_cell(cr, cell_x(x_min, pos), cell_y(pos));
             }
 
             /* draw the character */
             char buf[9];
-            gint len = g_unichar_to_utf8((gunichar)*charcode, buf);
+            gint len = g_unichar_to_utf8((gunichar)charcode, buf);
             pango_layout_set_text(layout, buf, len);
 
             double baseline = pango_units_to_double(pango_layout_get_baseline(layout));
@@ -671,9 +670,8 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
             curr_charcode++;
             pos++;
 
-            prev_charcode = *charcode;
-            *charcode = get_next_char(ft_face, *charcode, &idx);
-        } while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
+            charcode = get_next_char(ft_face, charcode, &idx);
+        } while (idx && (charcode < tbl_end) && is_in_block(charcode, block));
 
         /* Fill remaining empty cells */
         for (; curr_charcode < tbl_end; curr_charcode++, pos++) {
@@ -695,9 +693,8 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
         npages++;
         cairo_show_page(cr);
         cairo_restore(cr);
-    } while (idx && is_in_block(*charcode, block));
+    } while (idx && is_in_block(charcode, block));
 
-    *charcode = prev_charcode;
     return npages;
 }
 
@@ -757,8 +754,9 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face,
         if (block) {
             outline(surface, 1, pageno, block->name);
             int npages = draw_unicode_block(cr, layout, ft_face, font_name,
-                                            &charcode, block, ft_other_face);
+                                            charcode, block, ft_other_face);
             pageno += npages;
+            charcode = block->end;
         }
 
         charcode = get_next_char(ft_face, charcode, &idx);
