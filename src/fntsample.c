@@ -618,7 +618,6 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
                               const struct unicode_block *block, FT_Face ft_other_face)
 {
     unsigned long prev_charcode;
-    unsigned long prev_cell;
     int npages = 0;
     FT_UInt idx = FT_Get_Char_Index(ft_face, *charcode);
 
@@ -629,11 +628,13 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
             block->end + 1 : tbl_start + 0x100;
         unsigned int rows = (tbl_end - tbl_start) / 16;
         double x_min = (A4_WIDTH - rows * cell_width) / 2;
+
         bool filled_cells[256]; /* 16x16 glyphs max */
+        unsigned long curr_charcode = tbl_start;
+        int pos = 0;
 
         cairo_save(cr);
         draw_header(cr, font_name, block->name);
-        prev_cell = tbl_start - 1;
 
         memset(filled_cells, '\0', sizeof(filled_cells));
 
@@ -642,18 +643,14 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
          * Also highlight cells if needed.
          */
         do {
-            /* the current glyph position in the table */
-            int charpos = *charcode - tbl_start;
-
             /* fill empty cells before the current glyph */
-            for (unsigned long i = prev_cell + 1; i < *charcode; i++) {
-                int pos = i - tbl_start;
-                fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), i);
+            for (; curr_charcode < *charcode; curr_charcode++, pos++) {
+                fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), curr_charcode);
             }
 
             /* if it is new glyph - highlight the cell */
             if (ft_other_face && !FT_Get_Char_Index(ft_other_face, *charcode)) {
-                highlight_cell(cr, cell_x(x_min, charpos), cell_y(charpos));
+                highlight_cell(cr, cell_x(x_min, pos), cell_y(pos));
             }
 
             /* draw the character */
@@ -662,7 +659,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
             pango_layout_set_text(layout, buf, len);
 
             double baseline = pango_units_to_double(pango_layout_get_baseline(layout));
-            cairo_move_to(cr, cell_x(x_min, charpos), cell_y(charpos) + glyph_baseline_offset - baseline);
+            cairo_move_to(cr, cell_x(x_min, pos), cell_y(pos) + glyph_baseline_offset - baseline);
 
             if (no_embed) {
                 pango_cairo_layout_path(cr, layout);
@@ -670,17 +667,17 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout,
                 pango_cairo_show_layout(cr, layout);
             }
 
-            filled_cells[charpos] = true;
+            filled_cells[pos] = true;
+            curr_charcode++;
+            pos++;
 
             prev_charcode = *charcode;
-            prev_cell = *charcode;
             *charcode = get_next_char(ft_face, *charcode, &idx);
         } while (idx && (*charcode < tbl_end) && is_in_block(*charcode, block));
 
         /* Fill remaining empty cells */
-        for (unsigned long i = prev_cell + 1; i < tbl_end; i++) {
-            int pos = i - tbl_start;
-            fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), i);
+        for (; curr_charcode < tbl_end; curr_charcode++, pos++) {
+            fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), curr_charcode);
         }
 
         /*
