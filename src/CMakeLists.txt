@@ -14,7 +14,6 @@ add_executable(gen-unicode-blocks EXCLUDE_FROM_ALL
   read_blocks.c
 )
 
-target_compile_features(gen-unicode-blocks PRIVATE c_std_99)
 target_compile_options(gen-unicode-blocks PRIVATE ${C_WARNING_FLAGS})
 
 add_custom_command(
@@ -32,8 +31,6 @@ add_executable(fntsample
 )
 
 add_translatable_sources(fntsample.c read_blocks.c)
-
-target_compile_features(fntsample PRIVATE c_std_99)
 
 target_include_directories(fntsample PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
