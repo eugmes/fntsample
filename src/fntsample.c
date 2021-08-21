@@ -900,7 +900,7 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
         }
         struct tm *build_time = gmtime(&now);
         char buffer[25];
-        strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S%z", build_time);
+        strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", build_time);
 
         cairo_pdf_surface_set_metadata(surface,
                                        CAIRO_PDF_METADATA_CREATE_DATE,
