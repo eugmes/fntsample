@@ -6,6 +6,9 @@ project(fntsample
   HOMEPAGE_URL "https://github.com/eugmes/fntsample"
   LANGUAGES C)
 
+set(CMAKE_C_STANDARD 99 CACHE STRING "The C standard to use")
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
 include(GNUInstallDirs)
