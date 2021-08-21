@@ -41,7 +41,7 @@ jobs:
       run: cmake -GNinja -B${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} ${{ matrix.blocks }}
 
     - name: Build
-      run: cmake --build ${{ github.workspace }}/build
+      run: cmake --build ${{ github.workspace }}/build -v
 
     - name: Test
       run: ${{ github.workspace }}/build/src/fntsample --help
