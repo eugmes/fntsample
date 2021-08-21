@@ -37,11 +37,12 @@ target_include_directories(fntsample PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(fntsample PRIVATE
-  m
-  Intl::Intl
-  PkgConfig::pkgs
-)
+target_link_libraries(fntsample PRIVATE Intl::Intl PkgConfig::pkgs)
+
+find_library(MATH_LIBRARY m)
+if(MATH_LIBRARY)
+  target_link_libraries(fntsample PRIVATE ${MATH_LIBRARY})
+endif()
 
 target_compile_options(fntsample PRIVATE ${C_WARNING_FLAGS})
 
