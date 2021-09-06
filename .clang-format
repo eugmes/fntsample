@@ -1,0 +1,10 @@
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: Align
+BraceWrapping:
+  AfterFunction: true
+BreakBeforeBraces: Custom
+BreakBeforeTernaryOperators: false
+Cpp11BracedListStyle: true
+DerivePointerAlignment: true
+SortIncludes: false
+ColumnLimit: 100
