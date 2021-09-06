@@ -1,6 +1,6 @@
 #! /usr/bin/env perl
-# This file is in public domain
 # Author: Ievgenii Meshcheriakov <eugen@debian.org>
+# SPDX-License-Identifier: CC-PDDC
 #
 # This program adds outlines to pdf files.
 # Usage: pdfoutline input.pdf outline.txt out.pdf
