@@ -1,6 +1,6 @@
 /*
- * This file is in public domain
  * Author: Ievgenii Meshcheriakov <eugen@debian.org>
+ * SPDX-License-Identifier: CC-PDDC
  */
 #ifndef STATIC_UNICODE_BLOCKS_H
 #define STATIC_UNICODE_BLOCKS_H

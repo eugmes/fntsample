@@ -1,6 +1,6 @@
 #! /usr/bin/env perl
-# This file is in the public domain
 # Author: Ievgenii Meshcheriakov <eugen@debian.org>
+# SPDX-License-Identifier: CC-PDDC
 #
 # This program extracts outlines from PDF files. The outlines
 # are stored into a text file that could be used with pdfoutline
