@@ -55,13 +55,14 @@ struct unicode_block *read_blocks(const char *file_name, int *n)
             *n += 1;
             if (*n >= nalloc) {
                 int new_nalloc = nalloc + 256;
-                struct unicode_block *new_blocks = realloc(blocks,
-                                                           new_nalloc * sizeof(struct unicode_block));
+                struct unicode_block *new_blocks
+                    = realloc(blocks, new_nalloc * sizeof(struct unicode_block));
                 if (new_blocks == NULL) {
                     perror("realloc");
                     exit(9);
                 }
-                memset(new_blocks + nalloc, 0, (new_nalloc - nalloc) * sizeof(struct unicode_block));
+                memset(new_blocks + nalloc, 0,
+                       (new_nalloc - nalloc) * sizeof(struct unicode_block));
                 nalloc = new_nalloc;
                 blocks = new_blocks;
             }
