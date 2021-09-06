@@ -19,24 +19,21 @@
 static void write_header(FILE *f)
 {
     fprintf(f,
-        "#include \"static_unicode_blocks.h\"\n"
-        "\n"
-        "const struct unicode_block static_unicode_blocks[] = {\n"
-    );
+            "#include \"static_unicode_blocks.h\"\n"
+            "\n"
+            "const struct unicode_block static_unicode_blocks[] = {\n");
 }
 
 static void write_footer(FILE *f)
 {
     fprintf(f,
-        "    {0, 0, NULL},\n"
-        "};\n"
-    );
+            "    {0, 0, NULL},\n"
+            "};\n");
 }
 
 static void write_block(FILE *f, const struct unicode_block *block)
 {
-    fprintf(f, "    {0x%04lx, 0x%04lx, \"%s\"},\n",
-        block->start, block->end, block->name);
+    fprintf(f, "    {0x%04lx, 0x%04lx, \"%s\"},\n", block->start, block->end, block->name);
 }
 
 static void write_blocks(FILE *f, const struct unicode_block *blocks, int n)
