@@ -1,7 +1,7 @@
 /* Copyright © Євгеній Мещеряков <eugen@debian.org>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include <assert.h>
+#include <cassert>
 // TODO: freetype 2.10.3, do not include ft2build.h anymore
 #include <ft2build.h>
 #include <freetype/freetype.h>
@@ -10,23 +10,24 @@
 #include <cairo-ps.h>
 #include <cairo-svg.h>
 #include <cairo-ft.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <glib.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <stdint.h>
+#include <cstdint>
 #include <pango/pangocairo.h>
 #include <pango/pangofc-fontmap.h>
-#include <math.h>
+#include <cmath>
 #include <libintl.h>
-#include <locale.h>
+#include <clocale>
 
 #include "unicode_blocks.h"
 #include "static_unicode_blocks.h"
 #include "config.h"
+
+using namespace std;
 
 #define _(str) gettext(str)
 
@@ -44,7 +45,7 @@ static double cell_x(double x_min, int pos) { return x_min + cell_width * (pos /
 
 static double cell_y(int pos) { return ymin_border + cell_height * (pos % 16); }
 
-static struct option longopts[] = {
+static option longopts[] = {
     {"blocks-file", 1, 0, 'b'},
     {"font-file", 1, 0, 'f'},
     {"output-file", 1, 0, 'o'},
@@ -68,7 +69,7 @@ struct range {
     uint32_t first;
     uint32_t last;
     bool include;
-    struct range *next;
+    range *next;
 };
 
 static const char *font_file_name;
@@ -79,8 +80,8 @@ static bool svg_output;
 static bool print_outline;
 static bool write_outline;
 static bool no_embed;
-static struct range *ranges;
-static struct range *last_range;
+static range *ranges;
+static range *last_range;
 static int font_index;
 static int other_index;
 
@@ -90,12 +91,12 @@ struct fntsample_style {
     char *val;
 };
 
-static struct fntsample_style styles[] = {
-    {"header-font", "Sans Bold 12", NULL},
-    {"font-name-font", "Serif Bold 12", NULL},
-    {"table-numbers-font", "Sans 10", NULL},
-    {"cell-numbers-font", "Mono 8", NULL},
-    {NULL, NULL, NULL},
+static fntsample_style styles[] = {
+    {"header-font", "Sans Bold 12", nullptr},
+    {"font-name-font", "Serif Bold 12", nullptr},
+    {"table-numbers-font", "Sans 10", nullptr},
+    {"cell-numbers-font", "Mono 8", nullptr},
+    {nullptr, nullptr, nullptr},
 };
 
 struct table_fonts {
@@ -105,31 +106,31 @@ struct table_fonts {
     PangoFontDescription *cell_numbers;
 };
 
-static struct table_fonts table_fonts;
+static table_fonts table_fonts;
 
 static double cell_label_offset;
 static double cell_glyph_bot_offset;
 static double glyph_baseline_offset;
 static double font_scale;
 
-static const struct unicode_block *unicode_blocks;
+static const unicode_block *unicode_blocks;
 
 static void usage(const char *);
 
-static struct fntsample_style *find_style(const char *name)
+static fntsample_style *find_style(const char *name)
 {
-    for (struct fntsample_style *style = styles; style->name; style++) {
+    for (fntsample_style *style = styles; style->name; style++) {
         if (!strcmp(name, style->name)) {
             return style;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 static int set_style(const char *name, const char *val)
 {
-    struct fntsample_style *style = find_style(name);
+    fntsample_style *style = find_style(name);
 
     if (!style) {
         return -1;
@@ -151,10 +152,10 @@ static int set_style(const char *name, const char *val)
 
 static const char *get_style(const char *name)
 {
-    struct fntsample_style *style = find_style(name);
+    fntsample_style *style = find_style(name);
 
     if (!style) {
-        return NULL;
+        return nullptr;
     }
 
     return style->val ? style->val : style->default_val;
@@ -176,17 +177,17 @@ static int parse_style_string(char *s)
  *
  * Returns -1 on error.
  */
-static int add_range(char *range, bool include)
+static int add_range(char *range_str, bool include)
 {
     uint32_t first = 0, last = 0xffffffff;
     char *endptr;
 
-    char *minus = strchr(range, '-');
+    char *minus = strchr(range_str, '-');
 
     if (minus) {
-        if (minus != range) {
+        if (minus != range_str) {
             *minus = '\0';
-            first = strtoul(range, &endptr, 0);
+            first = strtoul(range_str, &endptr, 0);
             if (*endptr) {
                 return -1;
             }
@@ -197,11 +198,11 @@ static int add_range(char *range, bool include)
             if (*endptr) {
                 return -1;
             }
-        } else if (minus == range) {
+        } else if (minus == range_str) {
             return -1;
         }
     } else {
-        first = strtoul(range, &endptr, 0);
+        first = strtoul(range_str, &endptr, 0);
         if (*endptr)
             return -1;
         last = first;
@@ -211,7 +212,7 @@ static int add_range(char *range, bool include)
         return -1;
     }
 
-    struct range *r = malloc(sizeof(*r));
+    range *r = static_cast<range *>(malloc(sizeof(*r)));
     if (!r) {
         return -1;
     }
@@ -219,7 +220,7 @@ static int add_range(char *range, bool include)
     r->first = first;
     r->last = last;
     r->include = include;
-    r->next = NULL;
+    r->next = nullptr;
 
     if (ranges) {
         last_range->next = r;
@@ -240,7 +241,7 @@ static bool in_range(uint32_t c)
 {
     bool in = ranges ? (!ranges->include) : 1;
 
-    for (struct range *r = ranges; r; r = r->next) {
+    for (range *r = ranges; r; r = r->next) {
         if ((c >= r->first) && (c <= r->last)) {
             in = r->include;
         }
@@ -295,7 +296,7 @@ static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const
     PangoLayout *layout = pango_cairo_create_layout(cr);
     pango_layout_set_font_description(layout, ftdesc);
     pango_layout_set_text(layout, text, -1);
-    pango_layout_get_extents(layout, r, NULL);
+    pango_layout_get_extents(layout, r, nullptr);
 
     return layout;
 }
@@ -304,7 +305,7 @@ static void parse_options(int argc, char *const argv[])
 {
     for (;;) {
         int n;
-        int c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, NULL);
+        int c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, nullptr);
 
         if (c == -1) {
             break;
@@ -415,23 +416,23 @@ static void parse_options(int argc, char *const argv[])
 
 /*
  * Locate unicode block that contains given character code.
- * Returns this block or NULL if not found.
+ * Returns this block or nullptr if not found.
  */
-static const struct unicode_block *get_unicode_block(unsigned long charcode)
+static const unicode_block *get_unicode_block(unsigned long charcode)
 {
-    for (const struct unicode_block *block = unicode_blocks; block->name; block++) {
+    for (const unicode_block *block = unicode_blocks; block->name; block++) {
         if ((charcode >= block->start) && (charcode <= block->end)) {
             return block;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /*
  * Check if the given character code belongs to the given Unicode block.
  */
-static bool is_in_block(unsigned long charcode, const struct unicode_block *block)
+static bool is_in_block(unsigned long charcode, const unicode_block *block)
 {
     return ((charcode >= block->start) && (charcode <= block->end));
 }
@@ -447,7 +448,7 @@ static void outline(cairo_surface_t *surface, int level, int page, const char *t
 
     if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
         int len = snprintf(0, 0, "page=%d", page);
-        char *dest = malloc(len + 1);
+        char *dest = static_cast<char *>(malloc(len + 1));
         sprintf(dest, "page=%d", page);
 
         /* FIXME passing level here is not correct. */
@@ -598,7 +599,7 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  */
 static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
                               const char *font_name, unsigned long charcode,
-                              const struct unicode_block *block, FT_Face ft_other_face)
+                              const unicode_block *block, FT_Face ft_other_face)
 {
     int npages = 0;
     FT_UInt idx = FT_Get_Char_Index(ft_face, charcode);
@@ -710,7 +711,7 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face, FT_Face ft_other_face)
     FcPattern *fc_pat = FcPatternCreate();
     FcPatternAddInteger(fc_pat, FC_INDEX, font_index);
 
-    FcFontSet *fc_fontset = FcFontList(fc_config, fc_pat, NULL);
+    FcFontSet *fc_fontset = FcFontList(fc_config, fc_pat, nullptr);
     assert(fc_fontset->nfont > 0);
     FcPattern *fc_font = fc_fontset->fonts[0];
 
@@ -730,7 +731,7 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face, FT_Face ft_other_face)
     FT_ULong charcode = get_first_char(ft_face, &idx);
 
     while (idx) {
-        const struct unicode_block *block = get_unicode_block(charcode);
+        const unicode_block *block = get_unicode_block(charcode);
         if (block) {
             outline(surface, 1, pageno, block->name);
             int npages = draw_unicode_block(cr, layout, ft_face, font_name, charcode, block,
@@ -782,7 +783,7 @@ static void usage(const char *cmd)
 
     fprintf(stderr, _("\nSupported styles (and default values):\n"));
 
-    for (const struct fntsample_style *style = styles; style->name; style++) {
+    for (const fntsample_style *style = styles; style->name; style++) {
         fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
     }
 }
@@ -886,7 +887,7 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
             fprintf(stderr, _("Failed to parse environment variable SOURCE_DATE_EPOCH.\n"));
             exit(1);
         }
-        struct tm *build_time = gmtime(&now);
+        tm *build_time = gmtime(&now);
         char buffer[25];
         strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", build_time);
 
@@ -919,7 +920,7 @@ int main(int argc, char **argv)
         exit(4);
     }
 
-    FT_Face other_face = NULL;
+    FT_Face other_face = nullptr;
 
     if (other_font_file_name) {
         error = FT_New_Face(library, other_font_file_name, other_index, &other_face);

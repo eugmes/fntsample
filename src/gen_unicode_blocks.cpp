@@ -2,29 +2,32 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "unicode_blocks.h"
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
+
+using namespace std;
 
 static void write_header(FILE *f)
 {
     fprintf(f,
             "#include \"static_unicode_blocks.h\"\n"
             "\n"
-            "const struct unicode_block static_unicode_blocks[] = {\n");
+            "const unicode_block static_unicode_blocks[] = {\n");
 }
 
 static void write_footer(FILE *f)
 {
     fprintf(f,
-            "    {0, 0, NULL},\n"
+            "    {0, 0, nullptr},\n"
             "};\n");
 }
 
-static void write_block(FILE *f, const struct unicode_block *block)
+static void write_block(FILE *f, const unicode_block *block)
 {
     fprintf(f, "    {0x%04lx, 0x%04lx, \"%s\"},\n", block->start, block->end, block->name);
 }
 
-static void write_blocks(FILE *f, const struct unicode_block *blocks, int n)
+static void write_blocks(FILE *f, const unicode_block *blocks, int n)
 {
     write_header(f);
     for (int i = 0; i < n; i++) {
@@ -41,7 +44,7 @@ int main(int argc, char **argv)
     }
 
     int n;
-    struct unicode_block *blocks = read_blocks(argv[1], &n);
+    unicode_block *blocks = read_blocks(argv[1], &n);
 
     if (!blocks) {
         fprintf(stderr, "Failed to read unicode blocks file.\n");

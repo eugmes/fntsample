@@ -2,14 +2,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "unicode_blocks.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-struct unicode_block *read_blocks(const char *file_name, int *n)
+using namespace std;
+
+unicode_block *read_blocks(const char *file_name, int *n)
 {
     int nalloc = 256;
-    struct unicode_block *blocks = calloc(nalloc, sizeof(struct unicode_block));
+    unicode_block *blocks = static_cast<unicode_block *>(calloc(nalloc, sizeof(unicode_block)));
     *n = 0;
 
     FILE *input_file = fopen(file_name, "r");
@@ -18,7 +20,7 @@ struct unicode_block *read_blocks(const char *file_name, int *n)
         exit(7);
     }
 
-    char *line = NULL;
+    char *line = nullptr;
     size_t len = 0;
     ssize_t nread;
 
@@ -31,11 +33,11 @@ struct unicode_block *read_blocks(const char *file_name, int *n)
 
         int matched = sscanf(line, "%lx..%lx; %[^\r\n]", &block_start, &block_end, block_name);
         if (matched == 3) {
-            struct unicode_block *b = blocks + *n;
+            unicode_block *b = blocks + *n;
             b->start = block_start;
             b->end = block_end;
             b->name = strdup(block_name);
-            if (b->name == NULL) {
+            if (b->name == nullptr) {
                 perror("strdup");
                 exit(8);
             }
@@ -43,14 +45,14 @@ struct unicode_block *read_blocks(const char *file_name, int *n)
             *n += 1;
             if (*n >= nalloc) {
                 int new_nalloc = nalloc + 256;
-                struct unicode_block *new_blocks
-                    = realloc(blocks, new_nalloc * sizeof(struct unicode_block));
-                if (new_blocks == NULL) {
+                unicode_block *new_blocks
+                    = static_cast<unicode_block *>(realloc(blocks, new_nalloc * sizeof(unicode_block)));
+                if (new_blocks == nullptr) {
                     perror("realloc");
                     exit(9);
                 }
                 memset(new_blocks + nalloc, 0,
-                       (new_nalloc - nalloc) * sizeof(struct unicode_block));
+                       (new_nalloc - nalloc) * sizeof(unicode_block));
                 nalloc = new_nalloc;
                 blocks = new_blocks;
             }
@@ -60,9 +62,9 @@ struct unicode_block *read_blocks(const char *file_name, int *n)
 
     if (*n == 0) {
         free(blocks);
-        return NULL;
+        return nullptr;
     } else if (*n < nalloc) {
-        blocks = realloc(blocks, *n * sizeof(struct unicode_block));
+        blocks = static_cast<unicode_block *>(realloc(blocks, *n * sizeof(unicode_block)));
     }
 
     return blocks;
