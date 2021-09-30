@@ -16,6 +16,7 @@ include(CPack)
 
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
+find_package(fmt REQUIRED)
 
 # The target was added in CMake 3.20.
 if(NOT TARGET Intl::Intl)

@@ -10,7 +10,6 @@
 #include <cairo-ps.h>
 #include <cairo-svg.h>
 #include <cairo-ft.h>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <glib.h>
@@ -22,6 +21,8 @@
 #include <cmath>
 #include <libintl.h>
 #include <clocale>
+#include <iostream>
+#include <fmt/ostream.h>
 
 #include "unicode_blocks.h"
 #include "static_unicode_blocks.h"
@@ -314,26 +315,26 @@ static void parse_options(int argc, char *const argv[])
         switch (c) {
         case 'b':
             if (unicode_blocks) {
-                fprintf(stderr, _("Unicode blocks file should be given at most once!\n"));
+                cerr << _("Unicode blocks file should be given at most once!\n");
                 exit(1);
             }
 
             unicode_blocks = read_blocks(optarg, &n);
             if (n == 0) {
-                fprintf(stderr, _("Failed to load any blocks from the blocks file!\n"));
+                cerr << _("Failed to load any blocks from the blocks file!\n");
                 exit(6);
             }
             break;
         case 'f':
             if (font_file_name) {
-                fprintf(stderr, _("Font file name should be given only once!\n"));
+                cerr << _("Font file name should be given only once!\n");
                 exit(1);
             }
             font_file_name = optarg;
             break;
         case 'o':
             if (output_file_name) {
-                fprintf(stderr, _("Output file name should be given only once!\n"));
+                cerr << _("Output file name should be given only once!\n");
                 exit(1);
             }
             output_file_name = optarg;
@@ -344,7 +345,7 @@ static void parse_options(int argc, char *const argv[])
             break;
         case 'd':
             if (other_font_file_name) {
-                fprintf(stderr, _("Font file name should be given only once!\n"));
+                cerr << _("Font file name should be given only once!\n");
                 exit(1);
             }
             other_font_file_name = optarg;
@@ -400,12 +401,12 @@ static void parse_options(int argc, char *const argv[])
     }
 
     if (font_index < 0 || other_index < 0) {
-        fprintf(stderr, _("Font index should be non-negative!\n"));
+        cerr << _("Font index should be non-negative!\n");
         exit(1);
     }
 
     if (postscript_output && svg_output) {
-        fprintf(stderr, _("-s and -g cannot be used together!\n"));
+        cerr << _("-s and -g cannot be used together!\n");
         exit(1);
     }
 
@@ -443,17 +444,13 @@ static bool is_in_block(unsigned long charcode, const unicode_block *block)
 static void outline(cairo_surface_t *surface, int level, int page, const char *text)
 {
     if (print_outline) {
-        printf("%d %d %s\n", level, page, text);
+        fmt::print("{} {} {}\n", level, page, text);
     }
 
     if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
-        int len = snprintf(0, 0, "page=%d", page);
-        char *dest = static_cast<char *>(malloc(len + 1));
-        sprintf(dest, "page=%d", page);
-
+        auto s = fmt::format("page={}", page);
         /* FIXME passing level here is not correct. */
-        cairo_pdf_surface_add_outline(surface, level, text, dest, CAIRO_PDF_OUTLINE_FLAG_OPEN);
-        free(dest);
+        cairo_pdf_surface_add_outline(surface, level, text, s.c_str(), CAIRO_PDF_OUTLINE_FLAG_OPEN);
     }
 }
 
@@ -543,10 +540,10 @@ static void draw_grid(cairo_t *cr, unsigned int x_cells, unsigned long block_sta
     }
 
     for (unsigned int i = 0; i < x_cells; i++) {
-        snprintf(buf, sizeof(buf), "%03lX", block_start / 16 + i);
+        auto s = fmt::format("{:03X}", block_start / 16 + i);
 
         PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
+        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, s.c_str(), &r);
         cairo_move_to(cr,
                       x_min + i * cell_width + (cell_width - pango_units_to_double(r.width)) / 2,
                       ymin_border - 5.0);
@@ -577,11 +574,10 @@ static void fill_empty_cell(cairo_t *cr, double x, double y, unsigned long charc
  */
 static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 {
-    char buf[9];
-    snprintf(buf, sizeof(buf), "%04lX", charcode);
+    auto s = fmt::format("{:04X}", charcode);
 
     PangoRectangle r;
-    PangoLayout *layout = layout_text(cr, table_fonts.cell_numbers, buf, &r);
+    PangoLayout *layout = layout_text(cr, table_fonts.cell_numbers, s.c_str(), &r);
     cairo_move_to(cr, x + (cell_width - pango_units_to_double(r.width)) / 2.0,
                   y + cell_height - cell_label_offset);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
@@ -755,12 +751,11 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face, FT_Face ft_other_face)
  */
 static void usage(const char *cmd)
 {
-    fprintf(stderr,
-            _("Usage: %s [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
-              "       %s -h\n\n"),
-            cmd, cmd);
-    fprintf(
-        stderr,
+    fmt::print(cerr,
+            _("Usage: {0} [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
+              "       {0} -h\n\n"),
+            cmd);
+    cerr <<
         _("Options:\n"
           "  --blocks-file,       -b BLOCKS-FILE  Read Unicode blocks information from "
           "BLOCKS-FILE\n"
@@ -779,12 +774,12 @@ static void usage(const char *cmd)
           "the glyphs instead\n"
           "  --include-range,     -i RANGE        Show characters in RANGE\n"
           "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
-          "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n"));
+          "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n");
 
-    fprintf(stderr, _("\nSupported styles (and default values):\n"));
+    cerr << _("\nSupported styles (and default values):\n");
 
     for (const fntsample_style *style = styles; style->name; style++) {
-        fprintf(stderr, "\t%s (%s)\n", style->name, style->default_val);
+        fmt::print(cerr, "\t{} ({})\n", style->name, style->default_val);
     }
 }
 
@@ -844,13 +839,13 @@ void calc_font_scaling(FT_Face ft_face)
     /* Use some magic to find the best font size... */
     double tgt_size = cell_height - cell_glyph_bot_offset - 2;
     if (tgt_size <= 0) {
-        fprintf(stderr, _("Not enough space for rendering glyphs. Make cell font smaller.\n"));
+        cerr << _("Not enough space for rendering glyphs. Make cell font smaller.\n");
         exit(5);
     }
 
     double act_size = extents.ascent + extents.descent;
     if (act_size <= 0) {
-        fprintf(stderr, _("The font has strange metrics: ascent + descent = %g\n"), act_size);
+        fmt::print(cerr, _("The font has strange metrics: ascent + descent = {}\n"), act_size);
         exit(5);
     }
 
@@ -884,11 +879,12 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
         time_t now = strtoul(source_date_epoch, &endptr, 10);
 
         if (*endptr != 0) {
-            fprintf(stderr, _("Failed to parse environment variable SOURCE_DATE_EPOCH.\n"));
+            cerr << _("Failed to parse environment variable SOURCE_DATE_EPOCH.\n");
             exit(1);
         }
         tm *build_time = gmtime(&now);
         char buffer[25];
+        // TODO
         strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", build_time);
 
         cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_CREATE_DATE, buffer);
@@ -908,7 +904,7 @@ int main(int argc, char **argv)
 
     if (error) {
         /* TRANSLATORS: 'freetype' is a name of a library, and should be left untranslated */
-        fprintf(stderr, _("%s: freetype error\n"), argv[0]);
+        fmt::print(cerr, _("{}: freetype error\n"), argv[0]);
         exit(3);
     }
 
@@ -916,7 +912,7 @@ int main(int argc, char **argv)
     error = FT_New_Face(library, font_file_name, font_index, &face);
 
     if (error) {
-        fprintf(stderr, _("%s: failed to open font file %s\n"), argv[0], font_file_name);
+        fmt::print(cerr, _("%{}: failed to open font file {}\n"), argv[0], font_file_name);
         exit(4);
     }
 
@@ -926,7 +922,7 @@ int main(int argc, char **argv)
         error = FT_New_Face(library, other_font_file_name, other_index, &other_face);
 
         if (error) {
-            fprintf(stderr, _("%s: failed to create new font face\n"), argv[0]);
+            fmt::print(cerr, _("%{}: failed to create new font face\n"), argv[0]);
             exit(4);
         }
     }
@@ -945,7 +941,7 @@ int main(int argc, char **argv)
     cairo_status_t cr_status = cairo_surface_status(surface);
     if (cr_status != CAIRO_STATUS_SUCCESS) {
         /* TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated */
-        fprintf(stderr, _("%s: failed to create cairo surface: %s\n"), argv[0],
+        fmt::print(cerr, _("{}: failed to create cairo surface: {}\n"), argv[0],
                 cairo_status_to_string(cr_status));
         exit(1);
     }
@@ -953,7 +949,7 @@ int main(int argc, char **argv)
     cairo_t *cr = cairo_create(surface);
     cr_status = cairo_status(cr);
     if (cr_status != CAIRO_STATUS_SUCCESS) {
-        fprintf(stderr, _("%s: cairo_create failed: %s\n"), argv[0],
+        fmt::print(cerr, _("{}: cairo_create failed: {}\n"), argv[0],
                 cairo_status_to_string(cr_status));
         exit(1);
     }

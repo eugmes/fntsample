@@ -2,10 +2,9 @@ configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 configure_file(fntsample.1.in fntsample.1 @ONLY)
 
 set(
-  # FIXME: -Wformat-security does not work well with gettext on MacOS
   C_WARNING_FLAGS
     -Wcast-align -Werror-implicit-function-declaration -Wchar-subscripts
-    -Wall -W -Wpointer-arith -Wwrite-strings -Wno-format-security
+    -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security
     -Wmissing-format-attribute -fno-common -Wundef
   CACHE STRING "Warning flags for C compiler"
 )
@@ -14,6 +13,8 @@ add_executable(gen-unicode-blocks EXCLUDE_FROM_ALL
   gen_unicode_blocks.cpp
   read_blocks.cpp
 )
+
+target_link_libraries(gen-unicode-blocks PRIVATE fmt::fmt)
 
 target_compile_options(gen-unicode-blocks PRIVATE ${C_WARNING_FLAGS})
 
@@ -38,7 +39,7 @@ target_include_directories(fntsample PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(fntsample PRIVATE Intl::Intl PkgConfig::pkgs)
+target_link_libraries(fntsample PRIVATE Intl::Intl PkgConfig::pkgs fmt::fmt)
 
 target_compile_options(fntsample PRIVATE ${C_WARNING_FLAGS})
 

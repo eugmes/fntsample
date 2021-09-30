@@ -21,13 +21,13 @@ jobs:
           blocks: -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
           install_packages: >
             sudo apt update &&
-            sudo apt install cmake gettext libcairo2-dev libglib2.0-dev libfreetype6-dev libpango1.0-dev ninja-build pkg-config unicode-data
+            sudo apt install cmake gettext libcairo2-dev libglib2.0-dev libfmt-dev libfreetype6-dev libpango1.0-dev ninja-build pkg-config unicode-data
         - os: macos-latest
           env:
           - CMAKE_PREFIX_PATH: /usr/local/opt/gettext
           install_packages: >
             brew update &&
-            brew install cairo cmake fontconfig freetype gettext glib pango ninja pkg-config
+            brew install cairo cmake fmt fontconfig freetype gettext glib pango ninja pkg-config
 
     runs-on: ${{matrix.os}}
 

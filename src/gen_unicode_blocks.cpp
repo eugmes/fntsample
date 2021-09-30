@@ -2,44 +2,47 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include "unicode_blocks.h"
-#include <cstdio>
-#include <cstdlib>
+#include <fstream>
+#include <fmt/ostream.h>
+#include <iostream>
 
 using namespace std;
 
-static void write_header(FILE *f)
+static void write_header(ostream &stream)
 {
-    fprintf(f,
-            "#include \"static_unicode_blocks.h\"\n"
-            "\n"
-            "const unicode_block static_unicode_blocks[] = {\n");
+    stream <<
+R"(#include "static_unicode_blocks.h"
+
+const unicode_block static_unicode_blocks[] = {
+)";
 }
 
-static void write_footer(FILE *f)
+static void write_footer(ostream &stream)
 {
-    fprintf(f,
-            "    {0, 0, nullptr},\n"
-            "};\n");
+    stream <<
+R"(    {0, 0, nullptr},
+};
+)";
 }
 
-static void write_block(FILE *f, const unicode_block *block)
+static void write_block(ostream &stream, const unicode_block &block)
 {
-    fprintf(f, "    {0x%04lx, 0x%04lx, \"%s\"},\n", block->start, block->end, block->name);
+    fmt::print(stream, "    {{0x{:04x}, 0x{:04x}, \"{}\"}},\n", block.start, block.end, block.name);
 }
 
-static void write_blocks(FILE *f, const unicode_block *blocks, int n)
+static void write_blocks(ostream &stream, const unicode_block *blocks, int n)
 {
-    write_header(f);
+    write_header(stream);
     for (int i = 0; i < n; i++) {
-        write_block(f, blocks + i);
+        write_block(stream, blocks[i]);
     }
-    write_footer(f);
+    write_footer(stream);
 }
 
 int main(int argc, char **argv)
 {
     if (argc != 3) {
-        fprintf(stderr, "Usage: %s Blocks.txt output.c\n", argv[0]);
+        fmt::print(cerr, "Usage: {} Blocks.txt output.c\n", argv[0]);
         return 1;
     }
 
@@ -47,19 +50,21 @@ int main(int argc, char **argv)
     unicode_block *blocks = read_blocks(argv[1], &n);
 
     if (!blocks) {
-        fprintf(stderr, "Failed to read unicode blocks file.\n");
+        cerr << "Failed to read unicode blocks file.\n";
         return 2;
     }
 
-    FILE *f = fopen(argv[2], "wb");
-    if (!f) {
-        perror("fopen");
-        return 3;
+    try {
+        ofstream f(argv[2], ios::out | ios::trunc);
+        f.exceptions(ios::badbit | ios::failbit);
+        write_blocks(f, blocks, n);
+    } catch (const ios_base::failure &e) {
+        // FIXME: How to get useful error messages?
+        fmt::print(cerr, "Failed to save code file: {}\n", e.what());
+        return 1;
     }
 
-    write_blocks(f, blocks, n);
     free(blocks);
-    fclose(f);
 
     return 0;
 }
