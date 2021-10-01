@@ -11,7 +11,8 @@ set(
 
 add_executable(gen-unicode-blocks EXCLUDE_FROM_ALL
   gen_unicode_blocks.cpp
-  read_blocks.cpp
+  unicode_blocks.cpp
+  loadable_unicode_blocks.cpp
 )
 
 target_link_libraries(gen-unicode-blocks PRIVATE fmt::fmt)
@@ -28,11 +29,12 @@ add_custom_command(
 
 add_executable(fntsample
   fntsample.cpp
-  read_blocks.cpp
+  unicode_blocks.cpp
+  loadable_unicode_blocks.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/static_unicode_blocks.cpp
 )
 
-add_translatable_sources(fntsample.cpp read_blocks.cpp)
+add_translatable_sources(fntsample.cpp unicode_blocks.cpp loadable_unicode_blocks.cpp)
 
 target_include_directories(fntsample PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}

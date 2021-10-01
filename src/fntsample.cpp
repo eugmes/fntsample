@@ -23,9 +23,16 @@
 #include <clocale>
 #include <iostream>
 #include <fmt/ostream.h>
+#include <memory>
+#include <fstream>
+#include <string_view>
+#include <charconv>
 
-#include "unicode_blocks.h"
+#include "loadable_unicode_blocks.h"
 #include "static_unicode_blocks.h"
+#include "unicode_range_set.h"
+#include "unicode_utils.h"
+
 #include "config.h"
 
 using namespace std;
@@ -66,13 +73,7 @@ static option longopts[] = {
     {0, 0, 0, 0},
 };
 
-struct range {
-    uint32_t first;
-    uint32_t last;
-    bool include;
-    range *next;
-};
-
+static const char *blocks_file;
 static const char *font_file_name;
 static const char *other_font_file_name;
 static const char *output_file_name;
@@ -81,8 +82,7 @@ static bool svg_output;
 static bool print_outline;
 static bool write_outline;
 static bool no_embed;
-static range *ranges;
-static range *last_range;
+static unicode_range_set ranges;
 static int font_index;
 static int other_index;
 
@@ -113,8 +113,6 @@ static double cell_label_offset;
 static double cell_glyph_bot_offset;
 static double glyph_baseline_offset;
 static double font_scale;
-
-static const unicode_block *unicode_blocks;
 
 static void usage(const char *);
 
@@ -174,80 +172,82 @@ static int parse_style_string(char *s)
 }
 
 /*
- * Update output range.
- *
- * Returns -1 on error.
+ * Parse output range.
  */
-static int add_range(char *range_str, bool include)
+static optional<unicode_range> parse_range(string_view s)
 {
-    uint32_t first = 0, last = 0xffffffff;
-    char *endptr;
+    auto parse_code = [](const char *first, const char *last) -> optional<char32_t> {
+        int base = 10;
+        assert(first < last);
 
-    char *minus = strchr(range_str, '-');
-
-    if (minus) {
-        if (minus != range_str) {
-            *minus = '\0';
-            first = strtoul(range_str, &endptr, 0);
-            if (*endptr) {
-                return -1;
+        if (*first == '0') {
+            base = 8;
+            first++;
+            if (first < last && (*first == 'x' || *first == 'X')) {
+                base = 16;
+                first++;
             }
         }
 
-        if (*(minus + 1)) {
-            last = strtoul(minus + 1, &endptr, 0);
-            if (*endptr) {
-                return -1;
+        unsigned long n;
+        auto [ptr, ec] = from_chars(first, last, n, base);
+        if (ec == errc()) {
+            return unicode_utils::to_char32_t(n);
+        }
+        return {};
+    };
+
+    unicode_range r {0, unicode_utils::last_codepoint};
+
+    auto minus = s.find('-');
+
+    if (minus >= 0) {
+        // minus found
+        if (s.size() == 1) {
+            return {};
+        }
+
+        if (minus > 0) {
+            // not at the beginning
+            auto res = parse_code(s.data(), s.data() + minus);
+            if (!res) {
+                return {};
             }
-        } else if (minus == range_str) {
-            return -1;
+            r.start = *res;
+        }
+
+        if (minus < s.size() - 1) {
+            // not at the end
+            auto res = parse_code(s.data() + minus + 1, s.data() + s.size());
+            if (!res) {
+                return {};
+            }
+            r.end = *res;
         }
     } else {
-        first = strtoul(range_str, &endptr, 0);
-        if (*endptr)
-            return -1;
-        last = first;
+        // no minus found - single codepoint
+        auto res = parse_code(s.data(), s.data() + s.size());
+        if (!res) {
+            return {};
+        }
+        r.start = r.end = *res;
     }
 
-    if (first > last) {
-        return -1;
+    if (!r.is_valid()) {
+        return {};
     }
 
-    range *r = static_cast<range *>(malloc(sizeof(*r)));
-    if (!r) {
-        return -1;
-    }
-
-    r->first = first;
-    r->last = last;
-    r->include = include;
-    r->next = nullptr;
-
-    if (ranges) {
-        last_range->next = r;
-    } else {
-        ranges = r;
-    }
-
-    last_range = r;
-
-    return 0;
+    return r;
 }
 
-/*
- * Check if character with the given code belongs
- * to output range specified by the user.
- */
-static bool in_range(uint32_t c)
+bool add_range(string_view s, bool include)
 {
-    bool in = ranges ? (!ranges->include) : 1;
-
-    for (range *r = ranges; r; r = r->next) {
-        if ((c >= r->first) && (c <= r->last)) {
-            in = r->include;
-        }
+    auto res = parse_range(s);
+    if (!res) {
+        return false;
     }
-    return in;
+    ranges.add(*res, include);
+    return true;
 }
 
 /*
@@ -263,7 +263,7 @@ static FT_ULong get_next_char(FT_Face face, FT_ULong charcode, FT_UInt *idx)
 
     do {
         rval = FT_Get_Next_Char(face, rval, idx);
-    } while (*idx && !in_range(rval));
+    } while (*idx && !ranges.contains(rval));
 
     return rval;
 }
@@ -279,7 +279,7 @@ static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
 {
     FT_ULong rval = FT_Get_First_Char(face, idx);
 
-    if (*idx && !in_range(rval)) {
+    if (*idx && !ranges.contains(rval)) {
         rval = get_next_char(face, rval, idx);
     }
 
@@ -305,7 +305,6 @@ static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const
 static void parse_options(int argc, char *const argv[])
 {
     for (;;) {
-        int n;
         int c = getopt_long(argc, argv, "b:f:o:hd:sglwi:x:t:n:m:ep", longopts, nullptr);
 
         if (c == -1) {
@@ -314,16 +313,11 @@ static void parse_options(int argc, char *const argv[])
 
         switch (c) {
         case 'b':
-            if (unicode_blocks) {
+            if (blocks_file) {
                 cerr << _("Unicode blocks file should be given at most once!\n");
                 exit(1);
             }
-
-            unicode_blocks = read_blocks(optarg, &n);
-            if (n == 0) {
-                cerr << _("Failed to load any blocks from the blocks file!\n");
-                exit(6);
-            }
+            blocks_file = optarg;
             break;
         case 'f':
             if (font_file_name) {
@@ -364,7 +358,7 @@ static void parse_options(int argc, char *const argv[])
             break;
         case 'i':
         case 'x':
-            if (add_range(optarg, c == 'i')) {
+            if (!add_range(optarg, c == 'i')) {
                 usage(argv[0]);
                 exit(1);
             }
@@ -409,33 +403,6 @@ static void parse_options(int argc, char *const argv[])
         cerr << _("-s and -g cannot be used together!\n");
         exit(1);
     }
-
-    if (!unicode_blocks) {
-        unicode_blocks = static_unicode_blocks;
-    }
-}
-
-/*
- * Locate unicode block that contains given character code.
- * Returns this block or nullptr if not found.
- */
-static const unicode_block *get_unicode_block(unsigned long charcode)
-{
-    for (const unicode_block *block = unicode_blocks; block->name; block++) {
-        if ((charcode >= block->start) && (charcode <= block->end)) {
-            return block;
-        }
-    }
-
-    return nullptr;
-}
-
-/*
- * Check if the given character code belongs to the given Unicode block.
- */
-static bool is_in_block(unsigned long charcode, const unicode_block *block)
-{
-    return ((charcode >= block->start) && (charcode <= block->end));
 }
 
 /*
@@ -595,15 +562,16 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  */
 static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
                               const char *font_name, unsigned long charcode,
-                              const unicode_block *block, FT_Face ft_other_face)
+                              const unicode_blocks::block &block, FT_Face ft_other_face)
 {
     int npages = 0;
     FT_UInt idx = FT_Get_Char_Index(ft_face, charcode);
 
     do {
-        unsigned long offset = ((charcode - block->start) / 0x100) * 0x100;
-        unsigned long tbl_start = block->start + offset;
-        unsigned long tbl_end = tbl_start + 0xFF > block->end ? block->end + 1 : tbl_start + 0x100;
+        unsigned long offset = ((charcode - block.r.start) / 0x100) * 0x100;
+        unsigned long tbl_start = block.r.start + offset;
+        unsigned long tbl_end
+            = tbl_start + 0xFF > block.r.end ? block.r.end + 1 : tbl_start + 0x100;
         unsigned int rows = (tbl_end - tbl_start) / 16;
         double x_min = (A4_WIDTH - rows * cell_width) / 2;
 
@@ -612,7 +580,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
         int pos = 0;
 
         cairo_save(cr);
-        draw_header(cr, font_name, block->name);
+        draw_header(cr, font_name, block.name);
 
         memset(filled_cells, '\0', sizeof(filled_cells));
 
@@ -650,7 +618,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
             pos++;
 
             charcode = get_next_char(ft_face, charcode, &idx);
-        } while (idx && (charcode < tbl_end) && is_in_block(charcode, block));
+        } while (idx && (charcode < tbl_end) && block.contains(charcode));
 
         /* Fill remaining empty cells */
         for (; curr_charcode < tbl_end; curr_charcode++, pos++) {
@@ -671,7 +639,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
         npages++;
         cairo_show_page(cr);
         cairo_restore(cr);
-    } while (idx && is_in_block(charcode, block));
+    } while (idx && block.contains(charcode));
 
     return npages;
 }
@@ -699,7 +667,8 @@ static PangoLayout *create_glyph_layout(cairo_t *cr, FcConfig *fc_config, FcPatt
 /*
  * The main drawing function.
  */
-static void draw_glyphs(cairo_t *cr, FT_Face ft_face, FT_Face ft_other_face)
+static void draw_glyphs(const unicode_blocks &blocks, cairo_t *cr, FT_Face ft_face,
+                        FT_Face ft_other_face)
 {
     FcConfig *fc_config = FcConfigCreate();
     FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
@@ -727,13 +696,14 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face, FT_Face ft_other_face)
     FT_ULong charcode = get_first_char(ft_face, &idx);
 
     while (idx) {
-        const unicode_block *block = get_unicode_block(charcode);
-        if (block) {
-            outline(surface, 1, pageno, block->name);
+        if (auto b = blocks.find_block(charcode); b.has_value()) {
+            const auto block = *b;
+
+            outline(surface, 1, pageno, block.name);
             int npages = draw_unicode_block(cr, layout, ft_face, font_name, charcode, block,
                                             ft_other_face);
             pageno += npages;
-            charcode = block->end;
+            charcode = block.r.end;
         }
 
         charcode = get_next_char(ft_face, charcode, &idx);
@@ -752,29 +722,29 @@ static void draw_glyphs(cairo_t *cr, FT_Face ft_face, FT_Face ft_other_face)
 static void usage(const char *cmd)
 {
     fmt::print(cerr,
-            _("Usage: {0} [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
-              "       {0} -h\n\n"),
-            cmd);
-    cerr <<
-        _("Options:\n"
-          "  --blocks-file,       -b BLOCKS-FILE  Read Unicode blocks information from "
-          "BLOCKS-FILE\n"
-          "  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
-          "  --font-index,        -n IDX          Font index in FONT-FILE\n"
-          "  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
-          "  --help,              -h              Show this information message and exit\n"
-          "  --other-font-file,   -d OTHER-FONT   Compare FONT-FILE with OTHER-FONT and highlight "
-          "added glyphs\n"
-          "  --other-index,       -m IDX          Font index in OTHER-FONT\n"
-          "  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
-          "  --svg,               -g              Use SVG format for output\n"
-          "  --print-outline,     -l              Print document outlines data to standard output\n"
-          "  --write-outline,     -w              Write document outlines (only in PDF output)\n"
-          "  --no-embed,          -e              Don't embed the font in the output file, draw "
-          "the glyphs instead\n"
-          "  --include-range,     -i RANGE        Show characters in RANGE\n"
-          "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
-          "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n");
+               _("Usage: {0} [ OPTIONS ] -f FONT-FILE -o OUTPUT-FILE\n"
+                 "       {0} -h\n\n"),
+               cmd);
+    cerr << _(
+        "Options:\n"
+        "  --blocks-file,       -b BLOCKS-FILE  Read Unicode blocks information from "
+        "BLOCKS-FILE\n"
+        "  --font-file,         -f FONT-FILE    Create samples of FONT-FILE\n"
+        "  --font-index,        -n IDX          Font index in FONT-FILE\n"
+        "  --output-file,       -o OUTPUT-FILE  Save samples to OUTPUT-FILE\n"
+        "  --help,              -h              Show this information message and exit\n"
+        "  --other-font-file,   -d OTHER-FONT   Compare FONT-FILE with OTHER-FONT and highlight "
+        "added glyphs\n"
+        "  --other-index,       -m IDX          Font index in OTHER-FONT\n"
+        "  --postscript-output, -s              Use PostScript format for output instead of PDF\n"
+        "  --svg,               -g              Use SVG format for output\n"
+        "  --print-outline,     -l              Print document outlines data to standard output\n"
+        "  --write-outline,     -w              Write document outlines (only in PDF output)\n"
+        "  --no-embed,          -e              Don't embed the font in the output file, draw "
+        "the glyphs instead\n"
+        "  --include-range,     -i RANGE        Show characters in RANGE\n"
+        "  --exclude-range,     -x RANGE        Do not show characters in RANGE\n"
+        "  --style,             -t \"STYLE: VAL\" Set STYLE to value VAL\n");
 
     cerr << _("\nSupported styles (and default values):\n");
 
@@ -899,6 +869,26 @@ int main(int argc, char **argv)
 
     parse_options(argc, argv);
 
+    unique_ptr<loadable_unicode_blocks> loadable_blocks;
+
+    if (blocks_file) {
+        ifstream f(blocks_file, ios::binary);
+        if (!f) {
+            fmt::print(cerr, _("{}: cannot open Unicode blocks file.\n"), argv[0]);
+            exit(6);
+        }
+
+        // FIXME
+        loadable_blocks = make_unique<loadable_unicode_blocks>(f);
+        if (loadable_blocks->error_line()) {
+            fmt::print(cerr, _("{}: parse error in Unicode blocks file at line {}\n"), argv[0],
+                       loadable_blocks->error_line());
+            exit(6);
+        }
+    }
+
+    const unicode_blocks &blocks = loadable_blocks ? *loadable_blocks : get_static_blocks();
+
     FT_Library library;
     FT_Error error = FT_Init_FreeType(&library);
 
@@ -942,7 +932,7 @@ int main(int argc, char **argv)
     if (cr_status != CAIRO_STATUS_SUCCESS) {
         /* TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated */
         fmt::print(cerr, _("{}: failed to create cairo surface: {}\n"), argv[0],
-                cairo_status_to_string(cr_status));
+                   cairo_status_to_string(cr_status));
         exit(1);
     }
 
@@ -950,7 +940,7 @@ int main(int argc, char **argv)
     cr_status = cairo_status(cr);
     if (cr_status != CAIRO_STATUS_SUCCESS) {
         fmt::print(cerr, _("{}: cairo_create failed: {}\n"), argv[0],
-                cairo_status_to_string(cr_status));
+                   cairo_status_to_string(cr_status));
         exit(1);
     }
 
@@ -961,7 +951,7 @@ int main(int argc, char **argv)
 
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     calc_font_scaling(face);
-    draw_glyphs(cr, face, other_face);
+    draw_glyphs(blocks, cr, face, other_face);
     cairo_destroy(cr);
 
     return 0;

@@ -1,39 +1,41 @@
 /* Copyright © Євгеній Мещеряков <eugen@debian.org>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-#include "unicode_blocks.h"
 #include <fstream>
 #include <fmt/ostream.h>
 #include <iostream>
+
+#include "loadable_unicode_blocks.h"
 
 using namespace std;
 
 static void write_header(ostream &stream)
 {
     stream <<
-R"(#include "static_unicode_blocks.h"
+        R"(#include "static_unicode_blocks.h"
 
-const unicode_block static_unicode_blocks[] = {
+constexpr static_unicode_blocks static_blocks {
 )";
 }
 
 static void write_footer(ostream &stream)
 {
-    stream <<
-R"(    {0, 0, nullptr},
-};
+    stream << R"(};
+
+const unicode_blocks &get_static_blocks() { return static_blocks; }
 )";
 }
 
-static void write_block(ostream &stream, const unicode_block &block)
+static void write_block(ostream &stream, const unicode_blocks::block &block)
 {
-    fmt::print(stream, "    {{0x{:04x}, 0x{:04x}, \"{}\"}},\n", block.start, block.end, block.name);
+    fmt::print(stream, "    unicode_blocks::block {{{{0x{:04x}, 0x{:04x}}}, \"{}\"}},\n",
+               block.r.start, block.r.end, block.name);
 }
 
-static void write_blocks(ostream &stream, const unicode_block *blocks, int n)
+static void write_blocks(ostream &stream, const unicode_blocks &blocks)
 {
     write_header(stream);
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < blocks.size(); i++) {
         write_block(stream, blocks[i]);
     }
     write_footer(stream);
@@ -46,25 +48,34 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int n;
-    unicode_block *blocks = read_blocks(argv[1], &n);
+    const char *input_file_name = argv[1];
+    const char *output_file_name = argv[2];
 
-    if (!blocks) {
-        cerr << "Failed to read unicode blocks file.\n";
-        return 2;
-    }
-
-    try {
-        ofstream f(argv[2], ios::out | ios::trunc);
-        f.exceptions(ios::badbit | ios::failbit);
-        write_blocks(f, blocks, n);
-    } catch (const ios_base::failure &e) {
-        // FIXME: How to get useful error messages?
-        fmt::print(cerr, "Failed to save code file: {}\n", e.what());
+    ifstream input(input_file_name, ios::binary);
+    if (!input) {
+        cerr << "Failed to open input file\n";
         return 1;
     }
 
-    free(blocks);
+    loadable_unicode_blocks blocks(input);
+    input.close();
+
+    if (blocks.error_line()) {
+        fmt::print(cerr, "Parse error at line {}\n", blocks.error_line());
+        return 1;
+    }
+
+    ofstream output(output_file_name, ios::out | ios::trunc | ios::binary);
+    if (!output) {
+        cerr << "Failed to open output file\n";
+        return 1;
+    }
+
+    write_blocks(output, blocks);
+    if (!output) {
+        cerr << "Failed to write the output\n";
+        return 1;
+    }
 
     return 0;
 }
