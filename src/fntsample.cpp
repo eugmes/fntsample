@@ -27,6 +27,7 @@
 #include <fstream>
 #include <string_view>
 #include <charconv>
+#include <bitset>
 
 #include "loadable_unicode_blocks.h"
 #include "static_unicode_blocks.h"
@@ -593,14 +594,12 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
             = tbl_start + 0xFF > block.r.end ? block.r.end + 1 : tbl_start + 0x100;
         const page_metrics page((tbl_end - tbl_start) / page.num_rows);
 
-        bool filled_cells[256]; /* 16x16 glyphs max */
+        bitset<256> filled_cells; /* 16x16 glyphs max */
         unsigned long curr_charcode = tbl_start;
         int pos = 0;
 
         cairo_save(cr);
         draw_header(cr, font_name, block.name);
-
-        memset(filled_cells, '\0', sizeof(filled_cells));
 
         /*
          * Fill empty cells and calculate coordinates of the glyphs.
@@ -632,7 +631,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
                 pango_cairo_show_layout(cr, layout);
             }
 
-            filled_cells[pos] = true;
+            filled_cells.set(pos);
             curr_charcode++;
             pos++;
 
@@ -649,7 +648,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
          * font and the cell font for each filled cell.
          */
         for (unsigned long i = 0; i < tbl_end - tbl_start; i++) {
-            if (filled_cells[i]) {
+            if (filled_cells.test(i)) {
                 draw_charcode(cr, page.cell_x(i), page.cell_y(i), i + tbl_start);
             }
         }
