@@ -39,19 +39,43 @@ using namespace std;
 
 #define _(str) gettext(str)
 
-#define POINTS_PER_INCH 72
+constexpr double POINTS_PER_INCH = 72;
 
-#define A4_WIDTH (8.3 * POINTS_PER_INCH)
-#define A4_HEIGHT (11.7 * POINTS_PER_INCH)
+class page_metrics {
+public:
+    explicit page_metrics(unsigned num_columns) noexcept
+        : num_columns(num_columns)
+        , table_width(num_columns * cell_width)
+        , x_min((page_width - table_width) / 2)
+        , x_max(page_width - x_min)
+    {
+    }
 
-#define xmin_border (POINTS_PER_INCH / 1.5)
-#define ymin_border POINTS_PER_INCH
-#define cell_width ((A4_WIDTH - 2 * xmin_border) / 16)
-#define cell_height ((A4_HEIGHT - 2 * ymin_border) / 16)
+    static constexpr unsigned num_rows = 16;
+    static constexpr unsigned max_num_columns = 16;
+    const unsigned num_columns;
 
-static double cell_x(double x_min, int pos) { return x_min + cell_width * (pos / 16); }
+    // NOTE: A4 paper size
+    static constexpr double page_width = 8.3 * POINTS_PER_INCH;
+    static constexpr double page_height = 11.7 * POINTS_PER_INCH;
 
-static double cell_y(int pos) { return ymin_border + cell_height * (pos % 16); }
+    static constexpr double min_horiz_border = POINTS_PER_INCH / 1.5;
+    static constexpr double vert_border = POINTS_PER_INCH;
+    static constexpr double cell_width = (page_width - 2 * min_horiz_border) / max_num_columns;
+    static constexpr double cell_height = (page_height - 2 * vert_border) / num_rows;
+
+    static constexpr double table_height = page_height - vert_border * 2;
+    const double table_width;
+    const double x_min;
+    const double x_max;
+
+    double cell_x(unsigned pos) const noexcept { return x_min + cell_width * (pos / num_rows); }
+
+    double cell_y(unsigned pos) const noexcept
+    {
+        return vert_border + cell_height * (pos % num_rows);
+    }
+};
 
 static option longopts[] = {
     {"blocks-file", 1, 0, 'b'},
@@ -430,12 +454,12 @@ static void draw_header(cairo_t *cr, const char *face_name, const char *block_na
     PangoRectangle r;
 
     PangoLayout *layout = layout_text(cr, table_fonts.font_name, face_name, &r);
-    cairo_move_to(cr, (A4_WIDTH - pango_units_to_double(r.width)) / 2.0, 30.0);
+    cairo_move_to(cr, (page_metrics::page_width - pango_units_to_double(r.width)) / 2.0, 30.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 
     layout = layout_text(cr, table_fonts.header, block_name, &r);
-    cairo_move_to(cr, (A4_WIDTH - pango_units_to_double(r.width)) / 2.0, 50.0);
+    cairo_move_to(cr, (page_metrics::page_width - pango_units_to_double(r.width)) / 2.0, 50.0);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 }
@@ -448,7 +472,7 @@ static void highlight_cell(cairo_t *cr, double x, double y)
 {
     cairo_save(cr);
     cairo_set_source_rgb(cr, 1.0, 1.0, 0.6);
-    cairo_rectangle(cr, x, y, cell_width, cell_height);
+    cairo_rectangle(cr, x, y, page_metrics::cell_width, page_metrics::cell_height);
     cairo_fill(cr);
     cairo_restore(cr);
 }
@@ -456,64 +480,59 @@ static void highlight_cell(cairo_t *cr, double x, double y)
 /*
  * Draw table grid with row and column numbers.
  */
-static void draw_grid(cairo_t *cr, unsigned int x_cells, unsigned long block_start)
+static void draw_grid(cairo_t *cr, const page_metrics &page, unsigned long block_start)
 {
-    const double x_min = (A4_WIDTH - x_cells * cell_width) / 2;
-    const double x_max = (A4_WIDTH + x_cells * cell_width) / 2;
-    const double table_height = A4_HEIGHT - ymin_border * 2;
-
     cairo_set_line_width(cr, 1.0);
-    cairo_rectangle(cr, x_min, ymin_border, x_max - x_min, table_height);
-    cairo_move_to(cr, x_min, ymin_border);
-    cairo_line_to(cr, x_min, ymin_border - 15.0);
-    cairo_move_to(cr, x_max, ymin_border);
-    cairo_line_to(cr, x_max, ymin_border - 15.0);
+    cairo_rectangle(cr, page.x_min, page.vert_border, page.table_width, page.table_height);
+    cairo_move_to(cr, page.x_min, page.vert_border);
+    cairo_line_to(cr, page.x_min, page.vert_border - 15.0);
+    cairo_move_to(cr, page.x_max, page.vert_border);
+    cairo_line_to(cr, page.x_max, page.vert_border - 15.0);
     cairo_stroke(cr);
 
     cairo_set_line_width(cr, 0.5);
     /* draw horizontal lines */
-    for (int i = 1; i < 16; i++) {
-        // TODO: use better name instead of just POINTS_PER_INCH
-        cairo_move_to(cr, x_min, POINTS_PER_INCH + i * table_height / 16);
-        cairo_line_to(cr, x_max, POINTS_PER_INCH + i * table_height / 16);
+    for (unsigned row = 1; row < page.num_rows; row++) {
+        const auto y = page.vert_border + row * page.cell_height;
+        cairo_move_to(cr, page.x_min, y);
+        cairo_line_to(cr, page.x_max, y);
     }
 
     /* draw vertical lines */
-    for (unsigned int i = 1; i < x_cells; i++) {
-        cairo_move_to(cr, x_min + i * cell_width, ymin_border);
-        cairo_line_to(cr, x_min + i * cell_width, A4_HEIGHT - ymin_border);
+    for (unsigned col = 1; col < page.num_columns; col++) {
+        const auto x = page.x_min + col * page.cell_width;
+        cairo_move_to(cr, x, page.vert_border);
+        cairo_line_to(cr, x, page.page_height - page.vert_border);
     }
     cairo_stroke(cr);
 
-    /* draw glyph numbers */
-    char buf[17];
-    buf[1] = '\0';
-#define hexdigs "0123456789ABCDEF"
+    string buf;
 
-    for (int i = 0; i < 16; i++) {
-        buf[0] = hexdigs[i];
+    /* draw glyph numbers */
+    for (unsigned row = 0; row < page.num_rows; row++) {
+        buf = fmt::format("{:X}", row);
 
         PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf, &r);
-        cairo_move_to(cr, x_min - pango_units_to_double(PANGO_RBEARING(r)) - 5.0,
-                      POINTS_PER_INCH + (i + 0.5) * table_height / 16
-                          + pango_units_to_double(PANGO_DESCENT(r)) / 2);
+        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf.c_str(), &r);
+        const auto y = page.vert_border + (row + 0.5) * page.cell_height
+            + pango_units_to_double(PANGO_DESCENT(r)) / 2;
+
+        cairo_move_to(cr, page.x_min - pango_units_to_double(PANGO_RBEARING(r)) - 5.0, y);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-        cairo_move_to(cr, x_min + x_cells * cell_width + 5.0,
-                      POINTS_PER_INCH + (i + 0.5) * table_height / 16
-                          + pango_units_to_double(PANGO_DESCENT(r)) / 2);
+        cairo_move_to(cr, page.x_max + 5.0, y);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         g_object_unref(layout);
     }
 
-    for (unsigned int i = 0; i < x_cells; i++) {
-        auto s = fmt::format("{:03X}", block_start / 16 + i);
+    for (unsigned col = 0; col < page.num_columns; col++) {
+        buf = fmt::format("{:03X}", block_start / page.num_rows + col);
 
         PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, s.c_str(), &r);
+        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf.c_str(), &r);
         cairo_move_to(cr,
-                      x_min + i * cell_width + (cell_width - pango_units_to_double(r.width)) / 2,
-                      ymin_border - 5.0);
+                      page.x_min + col * page.cell_width
+                          + (page.cell_width - pango_units_to_double(r.width)) / 2,
+                      page.vert_border - 5.0);
         pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
         g_object_unref(layout);
     }
@@ -531,7 +550,7 @@ static void fill_empty_cell(cairo_t *cr, double x, double y, unsigned long charc
         else
             cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
     }
-    cairo_rectangle(cr, x, y, cell_width, cell_height);
+    cairo_rectangle(cr, x, y, page_metrics::cell_width, page_metrics::cell_height);
     cairo_fill(cr);
     cairo_restore(cr);
 }
@@ -545,8 +564,8 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
 
     PangoRectangle r;
     PangoLayout *layout = layout_text(cr, table_fonts.cell_numbers, s.c_str(), &r);
-    cairo_move_to(cr, x + (cell_width - pango_units_to_double(r.width)) / 2.0,
-                  y + cell_height - cell_label_offset);
+    cairo_move_to(cr, x + (page_metrics::cell_width - pango_units_to_double(r.width)) / 2.0,
+                  y + page_metrics::cell_height - cell_label_offset);
     pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
     g_object_unref(layout);
 }
@@ -572,8 +591,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
         unsigned long tbl_start = block.r.start + offset;
         unsigned long tbl_end
             = tbl_start + 0xFF > block.r.end ? block.r.end + 1 : tbl_start + 0x100;
-        unsigned int rows = (tbl_end - tbl_start) / 16;
-        double x_min = (A4_WIDTH - rows * cell_width) / 2;
+        const page_metrics page((tbl_end - tbl_start) / page.num_rows);
 
         bool filled_cells[256]; /* 16x16 glyphs max */
         unsigned long curr_charcode = tbl_start;
@@ -591,12 +609,12 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
         do {
             /* fill empty cells before the current glyph */
             for (; curr_charcode < charcode; curr_charcode++, pos++) {
-                fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), curr_charcode);
+                fill_empty_cell(cr, page.cell_x(pos), page.cell_y(pos), curr_charcode);
             }
 
             /* if it is new glyph - highlight the cell */
             if (ft_other_face && !FT_Get_Char_Index(ft_other_face, charcode)) {
-                highlight_cell(cr, cell_x(x_min, pos), cell_y(pos));
+                highlight_cell(cr, page.cell_x(pos), page.cell_y(pos));
             }
 
             /* draw the character */
@@ -605,7 +623,8 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
             pango_layout_set_text(layout, buf, len);
 
             double baseline = pango_units_to_double(pango_layout_get_baseline(layout));
-            cairo_move_to(cr, cell_x(x_min, pos), cell_y(pos) + glyph_baseline_offset - baseline);
+            cairo_move_to(cr, page.cell_x(pos),
+                          page.cell_y(pos) + glyph_baseline_offset - baseline);
 
             if (no_embed) {
                 pango_cairo_layout_path(cr, layout);
@@ -622,7 +641,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
 
         /* Fill remaining empty cells */
         for (; curr_charcode < tbl_end; curr_charcode++, pos++) {
-            fill_empty_cell(cr, cell_x(x_min, pos), cell_y(pos), curr_charcode);
+            fill_empty_cell(cr, page.cell_x(pos), page.cell_y(pos), curr_charcode);
         }
 
         /*
@@ -631,11 +650,11 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
          */
         for (unsigned long i = 0; i < tbl_end - tbl_start; i++) {
             if (filled_cells[i]) {
-                draw_charcode(cr, cell_x(x_min, i), cell_y(i), i + tbl_start);
+                draw_charcode(cr, page.cell_x(i), page.cell_y(i), i + tbl_start);
             }
         }
 
-        draw_grid(cr, rows, tbl_start);
+        draw_grid(cr, page, tbl_start);
         npages++;
         cairo_show_page(cr);
         cairo_restore(cr);
@@ -654,7 +673,7 @@ static PangoLayout *create_glyph_layout(cairo_t *cr, FcConfig *fc_config, FcPatt
     PangoFontDescription *font_desc = pango_fc_font_description_from_pattern(fc_font, FALSE);
     PangoLayout *layout = pango_layout_new(context);
     pango_layout_set_font_description(layout, font_desc);
-    pango_layout_set_width(layout, pango_units_from_double(cell_width));
+    pango_layout_set_width(layout, pango_units_from_double(page_metrics::cell_width));
     pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 
     g_object_unref(context);
@@ -807,7 +826,7 @@ void calc_font_scaling(FT_Face ft_face)
     cairo_scaled_font_extents(cr_font, &extents);
 
     /* Use some magic to find the best font size... */
-    double tgt_size = cell_height - cell_glyph_bot_offset - 2;
+    double tgt_size = page_metrics::cell_height - cell_glyph_bot_offset - 2;
     if (tgt_size <= 0) {
         cerr << _("Not enough space for rendering glyphs. Make cell font smaller.\n");
         exit(5);
@@ -920,11 +939,14 @@ int main(int argc, char **argv)
     cairo_surface_t *surface;
 
     if (postscript_output) {
-        surface = cairo_ps_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
+        surface = cairo_ps_surface_create(output_file_name, page_metrics::page_width,
+                                          page_metrics::page_height);
     } else if (svg_output) {
-        surface = cairo_svg_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT);
+        surface = cairo_svg_surface_create(output_file_name, page_metrics::page_width,
+                                           page_metrics::page_height);
     } else {
-        surface = cairo_pdf_surface_create(output_file_name, A4_WIDTH, A4_HEIGHT); /* A4 paper */
+        surface = cairo_pdf_surface_create(output_file_name, page_metrics::page_width,
+                                           page_metrics::page_height);
         set_repeatable_pdf_metadata(surface);
     }
 
