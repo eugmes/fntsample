@@ -3,7 +3,7 @@ configure_file(fntsample.1.in fntsample.1 @ONLY)
 
 set(
   C_WARNING_FLAGS
-    -Wcast-align -Werror-implicit-function-declaration -Wchar-subscripts
+    -Wcast-align -Wchar-subscripts
     -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security
     -Wmissing-format-attribute -fno-common -Wundef
   CACHE STRING "Warning flags for C compiler"
