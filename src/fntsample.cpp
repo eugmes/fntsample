@@ -239,7 +239,7 @@ static optional<unicode_range> parse_range(string_view s)
 
     auto minus = s.find('-');
 
-    if (minus >= 0) {
+    if (minus != s.npos) {
         // minus found
         if (s.size() == 1) {
             return {};
