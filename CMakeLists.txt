@@ -4,10 +4,10 @@ project(fntsample
   VERSION 5.4
   DESCRIPTION "PDF and PostScript font samples generator"
   HOMEPAGE_URL "https://github.com/eugmes/fntsample"
-  LANGUAGES C)
+  LANGUAGES CXX)
 
-set(CMAKE_C_STANDARD 99 CACHE STRING "The C standard to use")
-set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "The C++ standard to use")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
@@ -16,6 +16,7 @@ include(CPack)
 
 find_package(PkgConfig REQUIRED)
 find_package(Intl REQUIRED)
+find_package(fmt REQUIRED)
 
 # The target was added in CMake 3.20.
 if(NOT TARGET Intl::Intl)
@@ -32,6 +33,10 @@ pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
   pangocairo>=1.37.0
   pangoft2>=1.37.0
 )
+
+# FIXME: this is ugly
+pkg_search_module(cairomm REQUIRED IMPORTED_TARGET cairomm cairomm-1.16 cairomm-1.0)
+pkg_search_module(pangomm REQUIRED IMPORTED_TARGET pangomm pangomm-2.48 pangomm-1.4)
 
 include(DownloadUnicodeBlocks)
 
