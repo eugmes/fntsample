@@ -29,7 +29,8 @@ const unicode_blocks &get_static_blocks() { return static_blocks; }
 static void write_block(ostream &stream, const unicode_blocks::block &block)
 {
     fmt::print(stream, "    unicode_blocks::block {{{{0x{:04x}, 0x{:04x}}}, \"{}\"}},\n",
-               block.r.start, block.r.end, block.name);
+               static_cast<uint32_t>(block.r.start), static_cast<uint32_t>(block.r.end),
+               block.name);
 }
 
 static void write_blocks(ostream &stream, const unicode_blocks &blocks)
