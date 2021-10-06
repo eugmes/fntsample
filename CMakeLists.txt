@@ -34,6 +34,10 @@ pkg_check_modules(pkgs REQUIRED IMPORTED_TARGET
   pangoft2>=1.37.0
 )
 
+# FIXME: this is ugly
+pkg_search_module(cairomm REQUIRED IMPORTED_TARGET cairomm cairomm-1.16 cairomm-1.0)
+pkg_search_module(pangomm REQUIRED IMPORTED_TARGET pangomm pangomm-2.48 pangomm-1.4)
+
 include(DownloadUnicodeBlocks)
 
 download_unicode_blocks()

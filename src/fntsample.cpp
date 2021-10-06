@@ -5,18 +5,17 @@
 // TODO: freetype 2.10.3, do not include ft2build.h anymore
 #include <ft2build.h>
 #include <freetype/freetype.h>
-#include <cairo.h>
-#include <cairo-pdf.h>
-#include <cairo-ps.h>
-#include <cairo-svg.h>
-#include <cairo-ft.h>
+#include <cairomm/context.h>
+#include <cairomm/surface.h>
+#include <pangomm/layout.h>
+#include <pangomm/cairofontmap.h>
+#include <pangomm/init.h>
 #include <cstdlib>
 #include <cstring>
 #include <glib.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <cstdint>
-#include <pango/pangocairo.h>
 #include <pango/pangofc-fontmap.h>
 #include <cmath>
 #include <libintl.h>
@@ -39,6 +38,20 @@
 using namespace std;
 
 #define _(str) gettext(str)
+
+// This is also available in cairomm master
+class SaveGuard final {
+public:
+    explicit SaveGuard(Cairo::RefPtr<Cairo::Context> &context)
+        : ctx(context)
+    {
+        ctx->save();
+    }
+    ~SaveGuard() { ctx->restore(); }
+
+private:
+    Cairo::RefPtr<Cairo::Context> ctx;
+};
 
 constexpr double POINTS_PER_INCH = 72;
 
@@ -126,10 +139,10 @@ static fntsample_style styles[] = {
 };
 
 struct table_fonts {
-    PangoFontDescription *header;
-    PangoFontDescription *font_name;
-    PangoFontDescription *table_numbers;
-    PangoFontDescription *cell_numbers;
+    Pango::FontDescription header;
+    Pango::FontDescription font_name;
+    Pango::FontDescription table_numbers;
+    Pango::FontDescription cell_numbers;
 };
 
 static table_fonts table_fonts;
@@ -316,15 +329,18 @@ static FT_ULong get_first_char(FT_Face face, FT_UInt *idx)
  * Updates 'r' with text extents.
  * Returned layout should be freed using g_object_unref().
  */
-static PangoLayout *layout_text(cairo_t *cr, PangoFontDescription *ftdesc, const char *text,
-                                PangoRectangle *r)
+static auto layout_text(Cairo::RefPtr<Cairo::Context> &cr, Pango::FontDescription &ftdesc,
+                        const char *text)
 {
-    PangoLayout *layout = pango_cairo_create_layout(cr);
-    pango_layout_set_font_description(layout, ftdesc);
-    pango_layout_set_text(layout, text, -1);
-    pango_layout_get_extents(layout, r, nullptr);
+    auto layout = Pango::Layout::create(cr);
 
-    return layout;
+    layout->set_font_description(ftdesc);
+    layout->set_text(text);
+    Pango::Rectangle ink_rect, logical_rect;
+    layout->get_extents(ink_rect, logical_rect);
+
+    // FIXME: can logical rect be used instead?
+    return make_tuple(layout, ink_rect);
 }
 
 static void parse_options(int argc, char *const argv[])
@@ -433,79 +449,84 @@ static void parse_options(int argc, char *const argv[])
 /*
  * Format and print/write outline information, if requested by the user.
  */
-static void outline(cairo_surface_t *surface, int level, int page, const char *text)
+static void outline(Cairo::RefPtr<Cairo::Context> &cr, int level, int page, const char *text)
 {
     if (print_outline) {
         fmt::print("{} {} {}\n", level, page, text);
     }
 
-    if (write_outline && cairo_surface_get_type(surface) == CAIRO_SURFACE_TYPE_PDF) {
-        auto s = fmt::format("page={}", page);
-        /* FIXME passing level here is not correct. */
-        cairo_pdf_surface_add_outline(surface, level, text, s.c_str(), CAIRO_PDF_OUTLINE_FLAG_OPEN);
+    if (write_outline) {
+        // TODO: cache surface
+        if (auto surface = cr->get_target(); surface->get_type() == Cairo::Surface::Type::PDF) {
+            auto s = fmt::format("page={}", page);
+            /* FIXME passing level here is not correct. */
+            cairo_pdf_surface_add_outline(surface->cobj(), level, text, s.c_str(),
+                                          CAIRO_PDF_OUTLINE_FLAG_OPEN);
+        }
     }
+}
+
+static void draw_header_line(Cairo::RefPtr<Cairo::Context> &cr, Pango::FontDescription &ftdesc,
+                             const char *text, double y)
+{
+    auto [layout, r] = layout_text(cr, ftdesc, text);
+    cr->move_to((page_metrics::page_width - pango_units_to_double(r.get_width())) / 2.0, y);
+    as_const(layout)->get_line(0)->show_in_cairo_context(cr);
 }
 
 /*
  * Draw header of a page.
  * Header shows font name and current Unicode block.
  */
-static void draw_header(cairo_t *cr, const char *face_name, const char *block_name)
+static void draw_header(Cairo::RefPtr<Cairo::Context> &cr, const char *face_name,
+                        const char *block_name)
 {
-    PangoRectangle r;
-
-    PangoLayout *layout = layout_text(cr, table_fonts.font_name, face_name, &r);
-    cairo_move_to(cr, (page_metrics::page_width - pango_units_to_double(r.width)) / 2.0, 30.0);
-    pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-    g_object_unref(layout);
-
-    layout = layout_text(cr, table_fonts.header, block_name, &r);
-    cairo_move_to(cr, (page_metrics::page_width - pango_units_to_double(r.width)) / 2.0, 50.0);
-    pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-    g_object_unref(layout);
+    draw_header_line(cr, table_fonts.font_name, face_name, 30.0);
+    draw_header_line(cr, table_fonts.header, block_name, 50.0);
 }
 
 /*
  * Highlight the cell with given coordinates.
  * Used to highlight new glyphs.
  */
-static void highlight_cell(cairo_t *cr, double x, double y)
+static void highlight_cell(Cairo::RefPtr<Cairo::Context> &cr, double x, double y)
 {
-    cairo_save(cr);
-    cairo_set_source_rgb(cr, 1.0, 1.0, 0.6);
-    cairo_rectangle(cr, x, y, page_metrics::cell_width, page_metrics::cell_height);
-    cairo_fill(cr);
-    cairo_restore(cr);
+    SaveGuard saver(cr);
+    cr->set_source_rgb(1.0, 1.0, 0.6);
+    cr->rectangle(x, y, page_metrics::cell_width, page_metrics::cell_height);
+    cr->fill();
 }
 
 /*
  * Draw table grid with row and column numbers.
  */
-static void draw_grid(cairo_t *cr, const page_metrics &page, unsigned long block_start)
+static void draw_grid(Cairo::RefPtr<Cairo::Context> &cr, const page_metrics &page,
+                      unsigned long block_start)
 {
-    cairo_set_line_width(cr, 1.0);
-    cairo_rectangle(cr, page.x_min, page.vert_border, page.table_width, page.table_height);
-    cairo_move_to(cr, page.x_min, page.vert_border);
-    cairo_line_to(cr, page.x_min, page.vert_border - 15.0);
-    cairo_move_to(cr, page.x_max, page.vert_border);
-    cairo_line_to(cr, page.x_max, page.vert_border - 15.0);
-    cairo_stroke(cr);
+    cr->set_line_width(1.0);
+    cr->rectangle(page.x_min, page.vert_border, page.table_width, page.table_height);
+    cr->move_to(page.x_min, page.vert_border);
+    cr->line_to(page.x_min, page.vert_border - 15.0);
+    cr->move_to(page.x_max, page.vert_border);
+    cr->line_to(page.x_max, page.vert_border - 15.0);
+    cr->stroke();
 
-    cairo_set_line_width(cr, 0.5);
+    cr->set_line_width(0.5);
+
     /* draw horizontal lines */
     for (unsigned row = 1; row < page.num_rows; row++) {
         const auto y = page.vert_border + row * page.cell_height;
-        cairo_move_to(cr, page.x_min, y);
-        cairo_line_to(cr, page.x_max, y);
+        cr->move_to(page.x_min, y);
+        cr->line_to(page.x_max, y);
     }
 
     /* draw vertical lines */
     for (unsigned col = 1; col < page.num_columns; col++) {
         const auto x = page.x_min + col * page.cell_width;
-        cairo_move_to(cr, x, page.vert_border);
-        cairo_line_to(cr, x, page.page_height - page.vert_border);
+        cr->move_to(x, page.vert_border);
+        cr->line_to(x, page.page_height - page.vert_border);
     }
-    cairo_stroke(cr);
+    cr->stroke();
 
     string buf;
 
@@ -513,62 +534,58 @@ static void draw_grid(cairo_t *cr, const page_metrics &page, unsigned long block
     for (unsigned row = 0; row < page.num_rows; row++) {
         buf = fmt::format("{:X}", row);
 
-        PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf.c_str(), &r);
+        auto [layout, r] = layout_text(cr, table_fonts.table_numbers, buf.c_str());
         const auto y = page.vert_border + (row + 0.5) * page.cell_height
-            + pango_units_to_double(PANGO_DESCENT(r)) / 2;
+            + pango_units_to_double(r.get_descent()) / 2;
 
-        cairo_move_to(cr, page.x_min - pango_units_to_double(PANGO_RBEARING(r)) - 5.0, y);
-        pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-        cairo_move_to(cr, page.x_max + 5.0, y);
-        pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-        g_object_unref(layout);
+        cr->move_to(page.x_min - pango_units_to_double(r.get_rbearing()) - 5.0, y);
+        auto line = as_const(layout)->get_line(0);
+        line->show_in_cairo_context(cr);
+        cr->move_to(page.x_max + 5.0, y);
+        line->show_in_cairo_context(cr);
     }
 
     for (unsigned col = 0; col < page.num_columns; col++) {
         buf = fmt::format("{:03X}", block_start / page.num_rows + col);
 
-        PangoRectangle r;
-        PangoLayout *layout = layout_text(cr, table_fonts.table_numbers, buf.c_str(), &r);
-        cairo_move_to(cr,
-                      page.x_min + col * page.cell_width
-                          + (page.cell_width - pango_units_to_double(r.width)) / 2,
-                      page.vert_border - 5.0);
-        pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-        g_object_unref(layout);
+        auto [layout, r] = layout_text(cr, table_fonts.table_numbers, buf.c_str());
+        cr->move_to(page.x_min + col * page.cell_width
+                        + (page.cell_width - pango_units_to_double(r.get_width())) / 2,
+                    page.vert_border - 5.0);
+        as_const(layout)->get_line(0)->show_in_cairo_context(cr);
     }
 }
 
 /*
  * Fill empty cell. Color of the fill depends on the character properties.
  */
-static void fill_empty_cell(cairo_t *cr, double x, double y, unsigned long charcode)
+static void fill_empty_cell(Cairo::RefPtr<Cairo::Context> &cr, double x, double y,
+                            unsigned long charcode)
 {
-    cairo_save(cr);
+    SaveGuard saver(cr);
     if (g_unichar_isdefined(charcode)) {
-        if (g_unichar_iscntrl(charcode))
-            cairo_set_source_rgb(cr, 0.0, 0.0, 0.5);
-        else
-            cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+        if (g_unichar_iscntrl(charcode)) {
+            cr->set_source_rgb(0.0, 0.0, 0.5);
+        } else {
+            cr->set_source_rgb(0.5, 0.5, 0.5);
+        }
     }
-    cairo_rectangle(cr, x, y, page_metrics::cell_width, page_metrics::cell_height);
-    cairo_fill(cr);
-    cairo_restore(cr);
+    cr->rectangle(x, y, page_metrics::cell_width, page_metrics::cell_height);
+    cr->fill();
 }
 
 /*
  * Draw label with character code.
  */
-static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
+static void draw_charcode(Cairo::RefPtr<Cairo::Context> &cr, double x, double y, FT_ULong charcode)
 {
     auto s = fmt::format("{:04X}", charcode);
 
-    PangoRectangle r;
-    PangoLayout *layout = layout_text(cr, table_fonts.cell_numbers, s.c_str(), &r);
-    cairo_move_to(cr, x + (page_metrics::cell_width - pango_units_to_double(r.width)) / 2.0,
-                  y + page_metrics::cell_height - cell_label_offset);
-    pango_cairo_show_layout_line(cr, pango_layout_get_line_readonly(layout, 0));
-    g_object_unref(layout);
+    // FIXME
+    auto [layout, r] = layout_text(cr, table_fonts.cell_numbers, s.c_str());
+    cr->move_to(x + (page_metrics::cell_width - pango_units_to_double(r.get_width())) / 2.0,
+                y + page_metrics::cell_height - cell_label_offset);
+    as_const(layout)->get_line(0)->show_in_cairo_context(cr);
 }
 
 /*
@@ -580,7 +597,8 @@ static void draw_charcode(cairo_t *cr, double x, double y, FT_ULong charcode)
  *
  * Returns number of pages drawn.
  */
-static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
+static int draw_unicode_block(Cairo::RefPtr<Cairo::Context> &cr,
+                              Glib::RefPtr<Pango::Layout> &layout, FT_Face ft_face,
                               const char *font_name, unsigned long charcode,
                               const unicode_blocks::block &block, FT_Face ft_other_face)
 {
@@ -598,7 +616,7 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
         unsigned long curr_charcode = tbl_start;
         int pos = 0;
 
-        cairo_save(cr);
+        SaveGuard saver(cr);
         draw_header(cr, font_name, block.name);
 
         /*
@@ -619,16 +637,16 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
             /* draw the character */
             char buf[9];
             gint len = g_unichar_to_utf8((gunichar)charcode, buf);
-            pango_layout_set_text(layout, buf, len);
+            buf[len] = 0;
+            layout->set_text(buf);
 
-            double baseline = pango_units_to_double(pango_layout_get_baseline(layout));
-            cairo_move_to(cr, page.cell_x(pos),
-                          page.cell_y(pos) + glyph_baseline_offset - baseline);
+            double baseline = pango_units_to_double(layout->get_baseline());
+            cr->move_to(page.cell_x(pos), page.cell_y(pos) + glyph_baseline_offset - baseline);
 
             if (no_embed) {
-                pango_cairo_layout_path(cr, layout);
+                layout->add_to_cairo_context(cr);
             } else {
-                pango_cairo_show_layout(cr, layout);
+                layout->show_in_cairo_context(cr);
             }
 
             filled_cells.set(pos);
@@ -655,29 +673,25 @@ static int draw_unicode_block(cairo_t *cr, PangoLayout *layout, FT_Face ft_face,
 
         draw_grid(cr, page, tbl_start);
         npages++;
-        cairo_show_page(cr);
-        cairo_restore(cr);
+        cr->show_page();
     } while (idx && block.contains(charcode));
 
     return npages;
 }
 
-static PangoLayout *create_glyph_layout(cairo_t *cr, FcConfig *fc_config, FcPattern *fc_font)
+static auto create_glyph_layout(Cairo::RefPtr<Cairo::Context> &cr, FcConfig *fc_config,
+                                FcPattern *fc_font)
 {
-    PangoFontMap *fontmap = pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT);
-    pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap), fc_config);
-    PangoContext *context = pango_font_map_create_context(fontmap);
-    pango_cairo_update_context(cr, context);
+    auto fontmap = Glib::wrap(pango_cairo_font_map_new_for_font_type(CAIRO_FONT_TYPE_FT));
+    pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(fontmap->gobj()), fc_config);
+    auto context = fontmap->create_context();
+    context->update_from_cairo_context(cr);
 
-    PangoFontDescription *font_desc = pango_fc_font_description_from_pattern(fc_font, FALSE);
-    PangoLayout *layout = pango_layout_new(context);
-    pango_layout_set_font_description(layout, font_desc);
-    pango_layout_set_width(layout, pango_units_from_double(page_metrics::cell_width));
-    pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
-
-    g_object_unref(context);
-    g_object_unref(fontmap);
-    pango_font_description_free(font_desc);
+    auto font_desc = Glib::wrap(pango_fc_font_description_from_pattern(fc_font, FALSE));
+    auto layout = Pango::Layout::create(context);
+    layout->set_font_description(font_desc);
+    layout->set_width(pango_units_from_double(page_metrics::cell_width));
+    layout->set_alignment(Pango::Alignment::CENTER);
 
     return layout;
 }
@@ -685,8 +699,8 @@ static PangoLayout *create_glyph_layout(cairo_t *cr, FcConfig *fc_config, FcPatt
 /*
  * The main drawing function.
  */
-static void draw_glyphs(const unicode_blocks &blocks, cairo_t *cr, FT_Face ft_face,
-                        FT_Face ft_other_face)
+static void draw_glyphs(const unicode_blocks &blocks, Cairo::RefPtr<Cairo::Context> &cr,
+                        FT_Face ft_face, FT_Face ft_other_face)
 {
     FcConfig *fc_config = FcConfigCreate();
     FcConfigAppFontAddFile(fc_config, (const FcChar8 *)font_file_name);
@@ -703,12 +717,10 @@ static void draw_glyphs(const unicode_blocks &blocks, cairo_t *cr, FT_Face ft_fa
         font_name = "Unknown";
     }
 
-    cairo_surface_t *surface = cairo_get_target(cr);
-
     int pageno = 1;
-    outline(surface, 0, pageno, font_name);
+    outline(cr, 0, pageno, font_name);
 
-    PangoLayout *layout = create_glyph_layout(cr, fc_config, fc_font);
+    auto layout = create_glyph_layout(cr, fc_config, fc_font);
 
     FT_UInt idx;
     FT_ULong charcode = get_first_char(ft_face, &idx);
@@ -717,7 +729,7 @@ static void draw_glyphs(const unicode_blocks &blocks, cairo_t *cr, FT_Face ft_fa
         if (auto b = blocks.find_block(charcode); b.has_value()) {
             const auto block = *b;
 
-            outline(surface, 1, pageno, block.name);
+            outline(cr, 1, pageno, block.name);
             int npages = draw_unicode_block(cr, layout, ft_face, font_name, charcode, block,
                                             ft_other_face);
             pageno += npages;
@@ -726,8 +738,6 @@ static void draw_glyphs(const unicode_blocks &blocks, cairo_t *cr, FT_Face ft_fa
 
         charcode = get_next_char(ft_face, charcode, &idx);
     }
-
-    g_object_unref(layout);
 
     FcPatternDestroy(fc_pat);
     FcFontSetDestroy(fc_fontset);
@@ -776,29 +786,26 @@ static void usage(const char *cmd)
  */
 static void init_table_fonts(void)
 {
-    /* FIXME is this correct? */
-    PangoCairoFontMap *map = (PangoCairoFontMap *)pango_cairo_font_map_get_default();
-
+    // FIXME https://gitlab.gnome.org/GNOME/pangomm/-/issues/15
+    auto map = reinterpret_cast<PangoCairoFontMap *>(pango_cairo_font_map_get_default());
     pango_cairo_font_map_set_resolution(map, POINTS_PER_INCH);
 
-    table_fonts.header = pango_font_description_from_string(get_style("header-font"));
-    table_fonts.font_name = pango_font_description_from_string(get_style("font-name-font"));
-    table_fonts.table_numbers = pango_font_description_from_string(get_style("table-numbers-font"));
-    table_fonts.cell_numbers = pango_font_description_from_string(get_style("cell-numbers-font"));
+    table_fonts.header = Pango::FontDescription(get_style("header-font"));
+    table_fonts.font_name = Pango::FontDescription(get_style("font-name-font"));
+    table_fonts.table_numbers = Pango::FontDescription(get_style("table-numbers-font"));
+    table_fonts.cell_numbers = Pango::FontDescription(get_style("cell-numbers-font"));
 }
 
 /*
  * Calculate various offsets.
  */
-static void calculate_offsets(cairo_t *cr)
+static void calculate_offsets(Cairo::RefPtr<Cairo::Context> &cr)
 {
-    PangoRectangle extents;
     /* Assume that vertical extents does not depend on actual text */
-    PangoLayout *l = layout_text(cr, table_fonts.cell_numbers, "0123456789ABCDEF", &extents);
-    g_object_unref(l);
+    auto [layout, extents] = layout_text(cr, table_fonts.cell_numbers, "0123456789ABCDEF");
     /* Unsolved mistery of pango's font metrics.... */
-    double digits_ascent = pango_units_to_double(PANGO_DESCENT(extents));
-    double digits_descent = -pango_units_to_double(PANGO_ASCENT(extents));
+    double digits_ascent = pango_units_to_double(extents.get_descent());
+    double digits_descent = -pango_units_to_double(extents.get_ascent());
 
     cell_label_offset = digits_descent + 2;
     cell_glyph_bot_offset = cell_label_offset + digits_ascent + 2;
@@ -809,20 +816,18 @@ static void calculate_offsets(cairo_t *cr)
  */
 void calc_font_scaling(FT_Face ft_face)
 {
-    cairo_font_face_t *cr_face = cairo_ft_font_face_create_for_ft_face(ft_face, 0);
-    cairo_font_options_t *options = cairo_font_options_create();
+    auto cr_face = Cairo::FtFontFace::create(ft_face, 0);
+    auto options = Cairo::FontOptions();
 
     /* First create font with size 1 and measure it */
-    cairo_matrix_t font_matrix;
-    cairo_matrix_init_identity(&font_matrix);
-    cairo_matrix_t ctm;
-    cairo_matrix_init_identity(&ctm);
+    auto font_matrix = Cairo::identity_matrix();
+    const auto ctm = Cairo::identity_matrix();
 
     /* Turn off rounding, so we can get real metrics */
-    cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF);
-    cairo_scaled_font_t *cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
-    cairo_font_extents_t extents;
-    cairo_scaled_font_extents(cr_font, &extents);
+    options.set_hint_metrics(Cairo::FontOptions::HintMetrics::OFF);
+    auto cr_font = Cairo::ScaledFont::create(cr_face, font_matrix, ctm, options);
+    Cairo::FontExtents extents;
+    cr_font->get_extents(extents);
 
     /* Use some magic to find the best font size... */
     double tgt_size = page_metrics::cell_height - cell_glyph_bot_offset - 2;
@@ -838,27 +843,24 @@ void calc_font_scaling(FT_Face ft_face)
     }
 
     font_scale = tgt_size / act_size;
-    if (font_scale > 1)
+    if (font_scale > 1) {
         font_scale = trunc(font_scale); // just to make numbers nicer
-    if (font_scale > 20)
-        font_scale = 20; // Do not make font larger than in previous versions
-
-    cairo_scaled_font_destroy(cr_font);
+    }
+    font_scale = min(font_scale, 20.0); // Do not make font larger than in previous versions
 
     /* Create the font once again, but this time scaled */
-    cairo_matrix_init_scale(&font_matrix, font_scale, font_scale);
-    cr_font = cairo_scaled_font_create(cr_face, &font_matrix, &ctm, options);
-    cairo_scaled_font_extents(cr_font, &extents);
+    font_matrix = Cairo::scaling_matrix(font_scale, font_scale);
+    cr_font = Cairo::ScaledFont::create(cr_face, font_matrix, ctm, options);
+    cr_font->get_extents(extents);
     glyph_baseline_offset
         = (tgt_size - (extents.ascent + extents.descent)) / 2 + 2 + extents.ascent;
-    cairo_scaled_font_destroy(cr_font);
 }
 
 /*
  * Configure DPF surface metadata so fntsample can be used with
  * repeatable builds.
  */
-static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
+static void set_repeatable_pdf_metadata(Cairo::RefPtr<Cairo::Surface> &surface)
 {
     char *source_date_epoch = getenv("SOURCE_DATE_EPOCH");
 
@@ -875,7 +877,7 @@ static void set_repeatable_pdf_metadata(cairo_surface_t *surface)
         // TODO
         strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", build_time);
 
-        cairo_pdf_surface_set_metadata(surface, CAIRO_PDF_METADATA_CREATE_DATE, buffer);
+        cairo_pdf_surface_set_metadata(surface->cobj(), CAIRO_PDF_METADATA_CREATE_DATE, buffer);
     }
 }
 
@@ -935,45 +937,30 @@ int main(int argc, char **argv)
         }
     }
 
-    cairo_surface_t *surface;
+    Pango::init();
+
+    Cairo::RefPtr<Cairo::Surface> surface;
 
     if (postscript_output) {
-        surface = cairo_ps_surface_create(output_file_name, page_metrics::page_width,
-                                          page_metrics::page_height);
+        surface = Cairo::PsSurface::create(output_file_name, page_metrics::page_width,
+                                           page_metrics::page_height);
     } else if (svg_output) {
-        surface = cairo_svg_surface_create(output_file_name, page_metrics::page_width,
-                                           page_metrics::page_height);
+        surface = Cairo::SvgSurface::create(output_file_name, page_metrics::page_width,
+                                            page_metrics::page_height);
     } else {
-        surface = cairo_pdf_surface_create(output_file_name, page_metrics::page_width,
-                                           page_metrics::page_height);
+        surface = Cairo::PdfSurface::create(output_file_name, page_metrics::page_width,
+                                            page_metrics::page_height);
         set_repeatable_pdf_metadata(surface);
     }
 
-    cairo_status_t cr_status = cairo_surface_status(surface);
-    if (cr_status != CAIRO_STATUS_SUCCESS) {
-        /* TRANSLATORS: 'cairo' is a name of a library, and should be left untranslated */
-        fmt::print(cerr, _("{}: failed to create cairo surface: {}\n"), argv[0],
-                   cairo_status_to_string(cr_status));
-        exit(1);
-    }
-
-    cairo_t *cr = cairo_create(surface);
-    cr_status = cairo_status(cr);
-    if (cr_status != CAIRO_STATUS_SUCCESS) {
-        fmt::print(cerr, _("{}: cairo_create failed: {}\n"), argv[0],
-                   cairo_status_to_string(cr_status));
-        exit(1);
-    }
-
-    cairo_surface_destroy(surface);
+    auto cr = Cairo::Context::create(surface);
 
     init_table_fonts();
     calculate_offsets(cr);
 
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cr->set_source_rgb(0.0, 0.0, 0.0);
     calc_font_scaling(face);
     draw_glyphs(blocks, cr, face, other_face);
-    cairo_destroy(cr);
 
     return 0;
 }

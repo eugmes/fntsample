@@ -41,7 +41,7 @@ target_include_directories(fntsample PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(fntsample PRIVATE Intl::Intl PkgConfig::pkgs fmt::fmt)
+target_link_libraries(fntsample PRIVATE Intl::Intl PkgConfig::pkgs fmt::fmt PkgConfig::cairomm PkgConfig::pangomm)
 
 target_compile_options(fntsample PRIVATE ${C_WARNING_FLAGS})
 
