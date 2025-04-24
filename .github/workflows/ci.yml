@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   build:
     strategy:
@@ -18,30 +15,29 @@ jobs:
         - macos-latest
         include:
         - os: ubuntu-latest
-          blocks: -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
-          install_packages: >
-            sudo apt update &&
-            sudo apt install cmake gettext libcairo2-dev libglib2.0-dev libfreetype6-dev libpango1.0-dev ninja-build pkg-config unicode-data
+          cmake_extra_args: -DUNICODE_BLOCKS=/usr/share/unicode/Blocks.txt
+          install_packages: |
+            sudo apt update
+            sudo apt install gettext libcairo2-dev libglib2.0-dev libfreetype6-dev libpango1.0-dev unicode-data
         - os: macos-latest
-          env:
-          - CMAKE_PREFIX_PATH: /usr/local/opt/gettext
-          install_packages: >
-            brew update &&
-            brew install cairo cmake fontconfig freetype gettext glib pango ninja pkg-config
+          cmake_extra_args: -DCMAKE_PREFIX_PATH=$(brew --prefix gettext)
+          install_packages: |
+            brew update
+            brew install pango
 
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Install Packages
       run: ${{ matrix.install_packages }}
 
     - name: Configure
-      run: cmake -GNinja -B${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} ${{ matrix.blocks }}
+      run: cmake -GNinja -Bbuild -Wdev -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_extra_args }}
 
     - name: Build
-      run: cmake --build ${{ github.workspace }}/build -v
+      run: cmake --build build -v
 
     - name: Test
-      run: ${{ github.workspace }}/build/src/fntsample --help
+      run: build/src/fntsample --help
